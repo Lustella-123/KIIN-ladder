@@ -11,9 +11,8 @@
         canvas { display: block; }
         
         #ui-panel { position: absolute; top: 20px; left: 20px; width: 340px; z-index: 10; background: rgba(15, 15, 25, 0.9); padding: 20px; border-radius: 12px; border: 1px solid #0ff; backdrop-filter: blur(8px); box-shadow: 0 0 20px rgba(0,255,255,0.2); transition: transform 0.4s ease-in-out; max-height: 95vh; overflow-y: auto; }
-        #leaderboard { position: absolute; top: 20px; right: 20px; width: 260px; z-index: 10; background: rgba(15, 15, 25, 0.9); padding: 15px; border-radius: 12px; border: 1px solid #0ff; backdrop-filter: blur(8px); color: white; display: none; }
+        #leaderboard { position: absolute; top: 20px; right: 20px; width: 280px; z-index: 10; background: rgba(15, 15, 25, 0.9); padding: 15px; border-radius: 12px; border: 1px solid #0ff; backdrop-filter: blur(8px); color: white; display: none; }
         
-        /* 중력 반전 경고창 */
         #gravity-warning { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20; color: #ff0055; font-size: 80px; font-weight: 900; text-shadow: 0 0 20px #ff0055, 0 0 40px #ff0055; display: none; text-align: center; pointer-events: none; }
         
         .neon-text { color: #fff; text-shadow: 0 0 5px #fff, 0 0 15px #0ff, 0 0 30px #0ff; }
@@ -28,6 +27,7 @@
         .rank-1 { background: linear-gradient(90deg, rgba(255,215,0,0.4), transparent); border-left: 4px solid gold; transform: scale(1.05); margin-left: 5px; }
         .rank-2 { background: linear-gradient(90deg, rgba(192,192,192,0.4), transparent); border-left: 4px solid silver; }
         .rank-3 { background: linear-gradient(90deg, rgba(205,127,50,0.4), transparent); border-left: 4px solid #cd7f32; }
+        .rank-loser { background: linear-gradient(90deg, rgba(255,50,50,0.4), transparent); border-left: 4px solid #ff3232; color: #ff8888; }
 
         .item-desc { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.85rem; }
         .item-icon { font-size: 1.2rem; min-width: 25px; text-align: center; }
@@ -41,21 +41,25 @@
         <label class="text-cyan-300 text-sm font-bold mt-4 block">참가자 (쉼표로 구분)</label>
         <input type="text" id="players-input" value="철수, 영희, 민수, 지영, 동해, 백두, 한라, 태백, 광개토, 세종" placeholder="참가자 입력">
         
+        <div id="penalty-info" class="text-yellow-300 text-sm text-center mt-2 font-bold bg-yellow-900/40 p-2 rounded">
+            ☕ 커피 내기 당첨자: 2명 (자동 계산)
+        </div>
+
         <button id="start-btn" class="btn-neon">🚀 레이싱 시작!</button>
         <button id="reset-btn" class="btn-neon btn-reset">맵 무작위 생성 (새로고침)</button>
 
-        <!-- 아이템 도감 -->
-        <div class="mt-6 bg-gray-900/80 p-4 rounded-lg border border-gray-700 text-gray-300">
-            <h3 class="text-yellow-400 font-bold mb-3 border-b border-gray-700 pb-1">📚 게임 기믹 설명</h3>
-            <div class="item-desc"><span class="item-icon">❓</span> <span>무지개 상자 (랜덤 럭키박스)</span></div>
-            <div class="pl-8 mb-2 space-y-1 text-xs text-gray-400">
-                <p>▶ 🍄 <b>거대화:</b> 크기와 무게 2.5배 뻥튀기</p>
-                <p>▶ 🐭 <b>초소형화:</b> 조그맣고 날쌔게 변신</p>
-                <p>▶ 🥶 <b>얼음:</b> 2초간 꽁꽁 얼어붙어 정지</p>
+        <div class="mt-4 bg-gray-900/80 p-4 rounded-lg border border-gray-700 text-gray-300">
+            <h3 class="text-yellow-400 font-bold mb-3 border-b border-gray-700 pb-1">📚 게임 룰 & 기믹</h3>
+            <ul class="text-xs space-y-2">
+                <li>🎯 <b>커피 당첨:</b> (총 인원 ÷ 4) 명 꼴등 당첨!</li>
+                <li>🧲 <b>고무줄 효과:</b> 후반부로 갈수록 뒤쳐진 마블들의 속도가 빨라져 순위가 좁혀집니다.</li>
+            </ul>
+            <div class="mt-3">
+                <div class="item-desc"><span class="item-icon">❓</span> <span><b>럭키박스:</b> 거대화/초소형화/얼음 랜덤 발동</span></div>
+                <div class="item-desc"><span class="item-icon">❌</span> <span><b>지뢰:</b> 주변 구슬들을 사방으로 날려버림</span></div>
+                <div class="item-desc"><span class="item-icon">🕳️</span> <span><b>메가 블랙홀:</b> 빨아들여 빙글빙글 돌림</span></div>
+                <div class="item-desc"><span class="item-icon">⚠️</span> <span><b>빨간 스위치(후반부):</b> 3초간 <b>중력 반전!</b></span></div>
             </div>
-            <div class="item-desc"><span class="item-icon">❌</span> <span><b>지뢰:</b> 주변 구슬들을 사방으로 날려버림</span></div>
-            <div class="item-desc"><span class="item-icon">🕳️</span> <span><b>메가 블랙홀:</b> 빨아들여 빙글빙글 돌림</span></div>
-            <div class="item-desc"><span class="item-icon">⚠️</span> <span><b>빨간 스위치:</b> 3초간 <b>중력 반전</b> (하늘로!)</span></div>
         </div>
     </div>
 
@@ -75,16 +79,10 @@
               Body = Matter.Body,
               Composite = Matter.Composite,
               Constraint = Matter.Constraint,
-              Events = Matter.Events,
-              Vector = Matter.Vector;
+              Events = Matter.Events;
 
         let engine, runner, world;
-        let marbles = [];
-        let particles = [];
-        let finishedMarbles = [];
-        let sweepers = []; 
-        let mines = [];
-        let luckyBoxes = [];
+        let marbles = [], particles = [], finishedMarbles = [], sweepers = [], mines = [], luckyBoxes = [], blackholes = [];
         let gravitySwitch = null;
         
         const MAP_WIDTH = 1600;
@@ -96,12 +94,23 @@
         
         let isGravityReversed = false;
         let gravityTimer = 0;
-        const GRAVITY_DURATION = 180; 
+        const GRAVITY_DURATION = 180; // 3초
         const BASE_GRAVITY = 1.8;
         
+        let totalPlayers = 0;
+        let numLosers = 0;
+
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
         const colors = ['#00ffff', '#ff00ff', '#00ff00', '#ffff00', '#ff5500', '#0088ff', '#ff0055', '#aaff00', '#ffffff', '#ff8800', '#ffb0b0', '#b0ffb0'];
+
+        // 참가자 입력에 따른 커피 당첨자 실시간 업데이트
+        document.getElementById('players-input').addEventListener('input', (e) => {
+            let count = e.target.value.split(',').map(p => p.trim()).filter(p => p !== "").length;
+            let losers = Math.max(1, Math.floor(count / 4));
+            if(count === 0) losers = 0;
+            document.getElementById('penalty-info').innerText = `☕ 커피 내기 당첨자: ${losers}명 (자동 계산)`;
+        });
 
         function init() {
             engine = Engine.create();
@@ -132,129 +141,113 @@
         function buildMap() {
             Composite.clear(world);
             Engine.clear(engine);
-            marbles = [];
-            finishedMarbles = [];
-            particles = [];
-            sweepers = [];
-            mines = [];
-            luckyBoxes = [];
+            marbles = []; finishedMarbles = []; particles = []; sweepers = []; mines = []; luckyBoxes = []; blackholes = [];
             gravitySwitch = null;
             cameraY = 0;
             isGravityReversed = false;
             world.gravity.y = BASE_GRAVITY;
+            
             document.getElementById('gravity-warning').style.display = 'none';
             document.getElementById('leaderboard').style.display = 'none';
 
+            let elements = [];
             const wallOpts = { isStatic: true, label: 'wall', friction: 0, restitution: 0.6 };
-            let elements = [
+            
+            // 외곽 벽
+            elements.push(
                 Bodies.rectangle(-50, MAP_HEIGHT/2, 100, MAP_HEIGHT + 1000, wallOpts),
                 Bodies.rectangle(MAP_WIDTH + 50, MAP_HEIGHT/2, 100, MAP_HEIGHT + 1000, wallOpts),
                 Bodies.rectangle(MAP_WIDTH/2, MAP_HEIGHT + 100, MAP_WIDTH, 200, wallOpts)
-            ];
+            );
 
-            // 🚫 벽타기 방지턱 
-            for(let y = 800; y < MAP_HEIGHT - 1000; y += 700) {
-                elements.push(Bodies.rectangle(50, y, 300, 40, { isStatic: true, angle: Math.PI/5, friction: 0, restitution: 0.8, label: 'wall', chamfer: {radius: 15} }));
-                elements.push(Bodies.rectangle(MAP_WIDTH - 50, y + 350, 300, 40, { isStatic: true, angle: -Math.PI/5, friction: 0, restitution: 0.8, label: 'wall', chamfer: {radius: 15} }));
+            // 🚫 무작위 가드레일 (벽타기 꼼수 방지)
+            for(let y = 800; y < MAP_HEIGHT - 1000; y += 400 + Math.random() * 400) {
+                elements.push(Bodies.rectangle(50, y, 250 + Math.random()*100, 40, { isStatic: true, angle: Math.PI/5, friction: 0, restitution: 0.8, label: 'wall', chamfer: {radius: 15} }));
+                elements.push(Bodies.rectangle(MAP_WIDTH - 50, y + 200, 250 + Math.random()*100, 40, { isStatic: true, angle: -Math.PI/5, friction: 0, restitution: 0.8, label: 'wall', chamfer: {radius: 15} }));
             }
 
-            // [섹션 1] 랜덤 막대기 (시작 지점)
-            // 매번 개수, 길이, 각도, 위치가 다르게 생성됨
-            const numSticks = 4 + Math.floor(Math.random() * 3); // 4개 ~ 6개
+            // 🎲 [섹션 1] 완전 무작위 지그재그 막대기 
+            let startY = 300;
+            const numSticks = 5 + Math.floor(Math.random() * 4); // 5~8개
             for (let i = 0; i < numSticks; i++) {
-                let y = 300 + i * 350;
-                let isLeft = i % 2 === 0;
+                let y = startY + (i * (250 + Math.random() * 150));
+                let isLeft = Math.random() > 0.5;
+                let width = 400 + Math.random() * 500;
+                let x = (isLeft ? 0 : MAP_WIDTH) + (isLeft ? width/2 : -width/2) + (Math.random()*200 - 100);
+                let angle = (0.15 + Math.random() * 0.3) * (isLeft ? 1 : -1);
                 
-                // 가로 길이 랜덤 (500 ~ 900)
-                let width = 500 + Math.random() * 400;
-                
-                // 중앙을 기준으로 약간씩 틀어진 X 위치
-                let xOffset = (Math.random() * 300) * (isLeft ? -1 : 1);
-                let x = (MAP_WIDTH / 2) + (isLeft ? -200 : 200) + xOffset;
-                
-                // 각도 랜덤 (완만하거나 가파르게)
-                let angle = (0.2 + Math.random() * 0.25) * (isLeft ? 1 : -1);
-                
-                let rect = Bodies.rectangle(x, y, width, 40, { 
-                    isStatic: true, angle: angle, friction: 0, restitution: 0.3, label: 'wall', chamfer: { radius: 20 }
-                });
+                let rect = Bodies.rectangle(x, y, width, 40, { isStatic: true, angle: angle, friction: 0, restitution: 0.3, label: 'wall', chamfer: { radius: 20 } });
                 elements.push(rect);
                 
-                // 막대기 끝부분에 랜덤 확률로 지뢰 배치
-                if (Math.random() > 0.3) {
+                if (Math.random() > 0.5) {
                     let mineX = isLeft ? x + width/2 - 40 : x - width/2 + 40;
-                    let mine = Bodies.circle(mineX, y - 30, 20, { isStatic: true, isSensor: true, label: 'mine' });
-                    elements.push(mine);
-                    mines.push(mine);
+                    let mine = Bodies.circle(mineX, y - 40, 20, { isStatic: true, isSensor: true, label: 'mine' });
+                    elements.push(mine); mines.push(mine);
                 }
             }
 
-            // [섹션 2] 자이언트 시소 & 랜덤박스 (Y좌표 하향 조정)
-            let seesawStartY = 2400;
-            for(let i = 0; i < 3; i++) {
-                let x = MAP_WIDTH/2 + (i%2===0 ? -150 : 150);
-                let y = seesawStartY + (i * 450);
-                let seesaw = Bodies.rectangle(x, y, 500, 40, { friction: 0, restitution: 0.2, label: 'seesaw', chamfer: { radius: 20 }});
-                Matter.Body.setAngle(seesaw, (i%2===0 ? 0.1 : -0.1)); 
-                let pivot = Constraint.create({ pointA: {x, y}, bodyB: seesaw, length: 0, stiffness: 0.9, render: { visible: false } });
+            // 🎲 [섹션 2] 자이언트 시소 & 무빙 스위퍼 (혼합)
+            let midY = 3000;
+            const numMidObstacles = 8 + Math.floor(Math.random() * 5);
+            for(let i = 0; i < numMidObstacles; i++) {
+                let y = midY + (i * 350);
+                let x = MAP_WIDTH/2 + (Math.random()*400 - 200);
                 
-                elements.push(seesaw, pivot);
-                elements.push(Bodies.circle(x - 280, y - 50, 15, { isStatic: true, label: 'pin' }));
-                elements.push(Bodies.circle(x + 280, y - 50, 15, { isStatic: true, label: 'pin' }));
+                if (Math.random() > 0.4) { // 시소
+                    let seesaw = Bodies.rectangle(x, y, 400 + Math.random()*200, 40, { friction: 0, restitution: 0.2, label: 'seesaw', chamfer: { radius: 20 }});
+                    Matter.Body.setAngle(seesaw, (Math.random()*0.4 - 0.2)); 
+                    let pivot = Constraint.create({ pointA: {x, y}, bodyB: seesaw, length: 0, stiffness: 0.9, render: { visible: false } });
+                    elements.push(seesaw, pivot);
+                    elements.push(Bodies.circle(x - 250, y - 50, 15, { isStatic: true, label: 'pin' }), Bodies.circle(x + 250, y - 50, 15, { isStatic: true, label: 'pin' }));
+                } else { // 무빙 스위퍼
+                    let sweeper = Bodies.rectangle(x, y, 300 + Math.random()*150, 40, { isStatic: true, friction: 0, restitution: 0.8, label: 'wall', chamfer: { radius: 20 } });
+                    elements.push(sweeper);
+                    sweepers.push({ body: sweeper, startX: x, range: 250 + Math.random()*150, angle: Math.random() * Math.PI, speed: 0.03 + Math.random()*0.04 });
+                }
 
-                if (Math.random() > 0.3) {
-                    let box = Bodies.rectangle(x + (Math.random()>0.5?150:-150), y - 60, 50, 50, { isStatic: true, isSensor: true, label: 'lucky_box', chamfer: {radius: 8} });
-                    elements.push(box);
-                    luckyBoxes.push(box);
+                // 무작위 아이템
+                if (Math.random() > 0.6) {
+                    let box = Bodies.rectangle(x + (Math.random()*300 - 150), y - 80, 50, 50, { isStatic: true, isSensor: true, label: 'lucky_box', chamfer: {radius: 8} });
+                    elements.push(box); luckyBoxes.push(box);
                 }
             }
 
-            // [섹션 3] ↕️ 중력 반전 스위치
-            gravitySwitch = Bodies.rectangle(MAP_WIDTH/2, 3800, 200, 40, { isStatic: true, isSensor: true, label: 'gravity_switch', chamfer: {radius: 15} });
-            elements.push(gravitySwitch);
-
-            // [섹션 4] 무빙 스위퍼 & 지뢰
-            for(let y = 4200; y < 5400; y += 400) {
-                let sweeper = Bodies.rectangle(MAP_WIDTH/2, y, 350, 40, { isStatic: true, friction: 0, restitution: 0.8, label: 'wall', chamfer: { radius: 20 } });
-                elements.push(sweeper);
-                sweepers.push({ body: sweeper, startX: MAP_WIDTH/2, range: 350, angle: Math.random() * Math.PI, speed: 0.05 });
-                
-                if (Math.random() > 0.4) {
-                    let mine = Bodies.circle(MAP_WIDTH/2 + (Math.random()>0.5? 200 : -200), y + 150, 20, { isStatic: true, isSensor: true, label: 'mine' });
-                    elements.push(mine);
-                    mines.push(mine);
-                }
+            // 🎲 [섹션 3] 무작위 블랙홀 & 부스터
+            let bhY = 6000;
+            const numBH = 2 + Math.floor(Math.random() * 2);
+            for(let i=0; i<numBH; i++) {
+                let x = MAP_WIDTH/2 + (Math.random()*800 - 400);
+                let y = bhY + (i * 800) + Math.random()*300;
+                createBlackhole(elements, x, y, 400 + Math.random()*300, 0.005 + Math.random()*0.003);
             }
 
-            // [섹션 5] 🕳️ 메가 블랙홀
-            createBlackhole(elements, MAP_WIDTH/2 - 250, 6200, 600, 0.005); 
-            createBlackhole(elements, MAP_WIDTH/2 + 250, 7200, 600, 0.005);
-
-            let box1 = Bodies.rectangle(MAP_WIDTH/2, 6700, 50, 50, { isStatic: true, isSensor: true, label: 'lucky_box', chamfer: {radius: 8} });
-            elements.push(box1); luckyBoxes.push(box1);
-
-            // [섹션 6] 고속 부스터 패드
-            for(let i=0; i < 4; i++) {
-                let x = 300 + Math.random() * (MAP_WIDTH - 600);
-                let y = 8200 + i * 250;
-                let pad = Bodies.rectangle(x, y, 250, 30, { isStatic: true, isSensor: true, label: 'boost', chamfer: { radius: 10 } });
+            for(let i=0; i < 5 + Math.random()*3; i++) {
+                let x = 200 + Math.random() * (MAP_WIDTH - 400);
+                let y = 6000 + Math.random() * 3000;
+                let pad = Bodies.rectangle(x, y, 200 + Math.random()*100, 30, { isStatic: true, isSensor: true, label: 'boost', chamfer: { radius: 10 } });
                 elements.push(pad);
             }
 
-            // [섹션 7] 거대 핀볼 플링코
-            for (let y = 9400; y < 11000; y += 220) {
-                let offset = (y % 440 === 0) ? 0 : 110;
-                for (let x = 100; x < MAP_WIDTH - 50; x += 220) {
-                    if (Math.random() > 0.15) {
-                        elements.push(Bodies.circle(x + offset, y, 18, { isStatic: true, restitution: 0.6, label: 'pin' }));
-                    } else if (Math.random() > 0.7) {
+            // 🚨 [섹션 4] 대망의 극후반 '중력 반전 스위치' (9500 부근 배치)
+            let switchY = 9300 + Math.random() * 500;
+            gravitySwitch = Bodies.rectangle(MAP_WIDTH/2, switchY, 800 + Math.random()*400, 50, { isStatic: true, isSensor: true, label: 'gravity_switch', chamfer: {radius: 20} });
+            elements.push(gravitySwitch);
+
+            // 🎲 [섹션 5] 극후반 난전용 무작위 플링코 핀볼 & 지뢰밭
+            for (let y = switchY + 300; y < 11200; y += 180 + Math.random()*100) {
+                let offset = (Math.random() > 0.5) ? 0 : 90;
+                for (let x = 100; x < MAP_WIDTH - 50; x += 180 + Math.random()*50) {
+                    let rand = Math.random();
+                    if (rand > 0.2) {
+                        elements.push(Bodies.circle(x + offset, y, 15 + Math.random()*10, { isStatic: true, restitution: 0.6, label: 'pin' }));
+                    } else if (rand > 0.05) {
                         let mine = Bodies.circle(x + offset, y, 20, { isStatic: true, isSensor: true, label: 'mine' });
                         elements.push(mine); mines.push(mine);
                     }
                 }
             }
 
-            // [섹션 8] 결승선 슬롯
+            // 🏁 [섹션 6] 결승선 칸막이
             const numSlots = 10;
             const slotWidth = MAP_WIDTH / numSlots;
             for (let i = 1; i < numSlots; i++) {
@@ -268,7 +261,6 @@
             Composite.add(world, elements);
         }
 
-        let blackholes = [];
         function createBlackhole(elementsArray, x, y, radius, power) {
             let bhSensor = Bodies.circle(x, y, radius, { isStatic: true, isSensor: true, label: 'blackhole_sensor' });
             let bhCore = Bodies.circle(x, y, radius * 0.1, { isStatic: true, restitution: 0.8, friction: 0, label: 'blackhole_core' });
@@ -279,13 +271,16 @@
         function startRace(playerNames) {
             if(marbles.length > 0) buildMap();
             
+            totalPlayers = playerNames.length;
+            numLosers = Math.max(1, Math.floor(totalPlayers / 4)); // 최소 1명은 커피!
+
             document.getElementById('ui-panel').style.transform = 'translateY(-150%)';
             document.getElementById('leaderboard').style.display = 'block';
 
             playerNames.forEach((name, i) => {
                 const color = colors[i % colors.length];
-                const startX = (MAP_WIDTH / 2) + (Math.random() * 400 - 200);
-                const startY = -200 - (i * 120);
+                const startX = (MAP_WIDTH / 2) + (Math.random() * 600 - 300);
+                const startY = -300 - (Math.random() * 200);
                 
                 const marble = Bodies.circle(startX, startY, 24, { 
                     restitution: 0.6, 
@@ -299,19 +294,18 @@
                     }
                 });
                 
-                Body.setVelocity(marble, { x: (Math.random() - 0.5) * 10, y: 5 });
+                Body.setVelocity(marble, { x: (Math.random() - 0.5) * 15, y: 5 });
                 marbles.push(marble);
                 Composite.add(world, marble);
             });
         }
 
-        // 지뢰 폭발 
         function triggerMine(mineBody, triggerMarble) {
             Body.setPosition(mineBody, { x: -1000, y: -1000 });
             createParticles(mineBody.position.x, mineBody.position.y, '#ff0055', 80, 30); 
 
-            const explosionRadius = 250;
-            const explosionForce = 0.5;
+            const explosionRadius = 300;
+            const explosionForce = 0.6;
 
             marbles.forEach(marble => {
                 let dx = marble.position.x - mineBody.position.x;
@@ -321,19 +315,13 @@
                 if (distSq < explosionRadius * explosionRadius) {
                     let dist = Math.sqrt(distSq);
                     let forceMag = explosionForce * (1 - dist/explosionRadius) * marble.mass;
-                    
-                    Body.applyForce(marble, marble.position, {
-                        x: (dx/dist) * forceMag,
-                        y: (dy/dist) * forceMag - 0.2
-                    });
+                    Body.applyForce(marble, marble.position, { x: (dx/dist) * forceMag, y: (dy/dist) * forceMag - 0.3 });
                 }
             });
         }
 
-        // 랜덤 박스 
         function triggerLuckyBox(boxBody, marble) {
             Body.setPosition(boxBody, { x: -1000, y: -1000 });
-            
             const effects = ['giant', 'mini', 'freeze'];
             const effect = effects[Math.floor(Math.random() * effects.length)];
             
@@ -341,47 +329,41 @@
             
             if (effect === 'giant') {
                 marble.plugin.effectTimer = 400; 
-                Body.scale(marble, 2.5, 2.5); 
-                Body.setDensity(marble, 0.2); 
+                Body.scale(marble, 2.5, 2.5); Body.setDensity(marble, 0.2); 
                 createParticles(marble.position.x, marble.position.y, '#ffff00', 50);
             } 
             else if (effect === 'mini') {
                 marble.plugin.effectTimer = 400;
-                Body.scale(marble, 0.5, 0.5);
-                Body.setDensity(marble, 0.05); 
+                Body.scale(marble, 0.5, 0.5); Body.setDensity(marble, 0.05); 
                 createParticles(marble.position.x, marble.position.y, '#00ffff', 50);
             }
             else if (effect === 'freeze') {
                 marble.plugin.effectTimer = 120; 
                 marble.plugin.savedVelocity = { ...marble.velocity };
-                Body.setVelocity(marble, {x:0, y:0});
-                Body.setStatic(marble, true); 
+                Body.setVelocity(marble, {x:0, y:0}); Body.setStatic(marble, true); 
                 createParticles(marble.position.x, marble.position.y, '#ffffff', 50);
             }
         }
 
-        // 중력 스위치
         function triggerGravitySwitch() {
             if (isGravityReversed) return; 
-            
             isGravityReversed = true;
             gravityTimer = GRAVITY_DURATION;
             world.gravity.y = -BASE_GRAVITY; 
-            
-            const warning = document.getElementById('gravity-warning');
-            warning.style.display = 'block';
-            
-            createParticles(gravitySwitch.position.x, gravitySwitch.position.y, '#ff0000', 100, 40);
+            document.getElementById('gravity-warning').style.display = 'block';
+            createParticles(gravitySwitch.position.x, gravitySwitch.position.y, '#ff0000', 150, 50);
         }
 
-        // 매 프레임 업데이트
+        // 매 프레임 업데이트 로직 (핵심: 고무줄 효과 적용)
         function updateLogic() {
+            // 무빙 벽 이동
             sweepers.forEach(s => {
                 s.angle += s.speed;
                 let nx = s.startX + Math.sin(s.angle) * s.range;
                 Body.setPosition(s.body, { x: nx, y: s.body.position.y });
             });
 
+            // 블랙홀 인력
             blackholes.forEach(bh => {
                 bh.rotation += 0.08; 
                 marbles.forEach(marble => {
@@ -394,16 +376,52 @@
                         if (dist > 15) {
                             let massFactor = marble.plugin.effect === 'giant' ? 0.6 : 1.0;
                             let forceMag = bh.power * marble.mass * massFactor * (1 - dist/bh.radius); 
-                            let nx = dx / dist;
-                            let ny = dy / dist;
-                            let vx = nx * 1.5 + ny * 0.8;
-                            let vy = ny * 1.5 - nx * 0.8;
+                            let nx = dx / dist; let ny = dy / dist;
+                            let vx = nx * 1.5 + ny * 0.8; let vy = ny * 1.5 - nx * 0.8;
                             Body.applyForce(marble, marble.position, { x: vx * forceMag, y: vy * forceMag });
                         }
                     }
                 });
             });
 
+            // 🧲 고무줄 효과 (Rubber-Banding) - 순위를 좁혀주는 핵심 로직
+            let activeMarbles = marbles.filter(m => !m.plugin.finished);
+            if (activeMarbles.length > 1) {
+                // 선두(가장 낮은 곳) Y값 계산
+                let leaderY = isGravityReversed 
+                    ? Math.min(...activeMarbles.map(m => m.position.y)) 
+                    : Math.max(...activeMarbles.map(m => m.position.y));
+
+                activeMarbles.forEach(marble => {
+                    if (marble.plugin.effect === 'freeze') return;
+
+                    // 선두와의 거리 계산
+                    let distFromLeader = isGravityReversed 
+                        ? (marble.position.y - leaderY) 
+                        : (leaderY - marble.position.y);
+
+                    // 1등과 거리가 400 이상 벌어지면 뒤에서 밀어주는 가속도(Catch-up force) 부여
+                    if (distFromLeader > 400) {
+                        // 멀어질수록 강하게 당김 (단, 최대치 제한)
+                        let catchUpPower = Math.min(distFromLeader * 0.000015, 0.03) * marble.mass;
+                        Body.applyForce(marble, marble.position, {
+                            x: 0, 
+                            y: isGravityReversed ? -catchUpPower : catchUpPower
+                        });
+                    }
+
+                    // 1등 그룹에게는 약간의 저항(Drag)을 주어 독주 방지
+                    if (distFromLeader < 100 && activeMarbles.length > 2) {
+                        let drag = 0.005 * marble.mass;
+                        Body.applyForce(marble, marble.position, {
+                            x: 0,
+                            y: isGravityReversed ? drag : -drag
+                        });
+                    }
+                });
+            }
+
+            // 중력 반전 타이머
             if (isGravityReversed) {
                 gravityTimer--;
                 if (gravityTimer <= 0) {
@@ -418,31 +436,24 @@
             marbles.forEach(marble => {
                 if (marble.plugin.finished) return;
 
+                // 끼임 방지 탈출
                 if (marble.plugin.effect !== 'freeze' && Math.abs(marble.velocity.x) < 0.5 && Math.abs(marble.velocity.y) < 0.5) {
                     marble.plugin.stuckTimer++;
                     if (marble.plugin.stuckTimer > 30) {
-                        Body.applyForce(marble, marble.position, {
-                            x: (Math.random() - 0.5) * 0.2 * marble.mass,
-                            y: (isGravityReversed ? 0.25 : -0.25) * marble.mass 
-                        });
+                        Body.applyForce(marble, marble.position, { x: (Math.random() - 0.5) * 0.2 * marble.mass, y: (isGravityReversed ? 0.3 : -0.3) * marble.mass });
                         marble.plugin.stuckTimer = 0;
                     }
                 } else {
                     marble.plugin.stuckTimer = 0;
                 }
 
+                // 특수 효과 해제 타이머
                 if (marble.plugin.effect !== 'none') {
                     marble.plugin.effectTimer--;
                     if (marble.plugin.effectTimer <= 0) {
-                        if (marble.plugin.effect === 'giant') {
-                            Body.scale(marble, 1/2.5, 1/2.5); 
-                            Body.setDensity(marble, 0.05);    
-                        } else if (marble.plugin.effect === 'mini') {
-                            Body.scale(marble, 2, 2); 
-                        } else if (marble.plugin.effect === 'freeze') {
-                            Body.setStatic(marble, false);
-                            Body.setVelocity(marble, marble.plugin.savedVelocity);
-                        }
+                        if (marble.plugin.effect === 'giant') { Body.scale(marble, 1/2.5, 1/2.5); Body.setDensity(marble, 0.05); } 
+                        else if (marble.plugin.effect === 'mini') { Body.scale(marble, 2, 2); } 
+                        else if (marble.plugin.effect === 'freeze') { Body.setStatic(marble, false); Body.setVelocity(marble, marble.plugin.savedVelocity); }
                         marble.plugin.effect = 'none';
                         createParticles(marble.position.x, marble.position.y, marble.plugin.color, 30);
                     }
@@ -452,11 +463,8 @@
 
         function handleCollisions(event) {
             event.pairs.forEach(pair => {
-                let bodyA = pair.bodyA;
-                let bodyB = pair.bodyB;
-                
-                if (bodyA.label === 'blackhole_core' || bodyB.label === 'blackhole_core') {
-                    let marble = bodyA.label === 'marble' ? bodyA : (bodyB.label === 'marble' ? bodyB : null);
+                if (pair.bodyA.label === 'blackhole_core' || pair.bodyB.label === 'blackhole_core') {
+                    let marble = pair.bodyA.label === 'marble' ? pair.bodyA : (pair.bodyB.label === 'marble' ? pair.bodyB : null);
                     if(marble) createParticles(marble.position.x, marble.position.y, '#a020f0', 10);
                 }
             });
@@ -464,42 +472,23 @@
 
         function handleActiveCollisions(event) {
             event.pairs.forEach(pair => {
-                let bodyA = pair.bodyA;
-                let bodyB = pair.bodyB;
-                let marble = null;
-                let sensor = null;
+                let marble = pair.bodyA.label === 'marble' ? pair.bodyA : (pair.bodyB.label === 'marble' ? pair.bodyB : null);
+                let sensor = pair.bodyA.isSensor ? pair.bodyA : (pair.bodyB.isSensor ? pair.bodyB : null);
 
-                if (bodyA.label === 'marble') marble = bodyA;
-                else if (bodyB.label === 'marble') marble = bodyB;
-
-                if (!marble) return;
-
-                if (bodyA.isSensor) sensor = bodyA;
-                else if (bodyB.isSensor) sensor = bodyB;
-
-                if (sensor) {
+                if (marble && sensor) {
                     if (sensor.label === 'boost') {
                         Body.applyForce(marble, marble.position, { x: 0, y: 0.1 * (marble.mass / 0.09) * (isGravityReversed ? -1 : 1) }); 
                         createParticles(marble.position.x, marble.position.y - 20, '#0f0', 3);
                     } 
-                    else if (sensor.label === 'mine') {
-                        triggerMine(sensor, marble);
-                    }
-                    else if (sensor.label === 'lucky_box' && marble.plugin.effect === 'none') {
-                        triggerLuckyBox(sensor, marble);
-                    }
-                    else if (sensor.label === 'gravity_switch') {
-                        triggerGravitySwitch();
-                        Body.setPosition(sensor, {x: -1000, y: -1000}); 
-                    }
+                    else if (sensor.label === 'mine') triggerMine(sensor, marble);
+                    else if (sensor.label === 'lucky_box' && marble.plugin.effect === 'none') triggerLuckyBox(sensor, marble);
+                    else if (sensor.label === 'gravity_switch') { triggerGravitySwitch(); Body.setPosition(sensor, {x: -1000, y: -1000}); }
                 }
             });
         }
 
         function createParticles(x, y, color, count, speed=20) {
-            for(let i=0; i<count; i++) {
-                particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * speed, vy: (Math.random() - 0.5) * speed, life: 1.0, color: color });
-            }
+            for(let i=0; i<count; i++) particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * speed, vy: (Math.random() - 0.5) * speed, life: 1.0, color: color });
         }
 
         function drawRoundRect(ctx, x, y, width, height, radius) {
@@ -509,7 +498,6 @@
         function render() {
             if (isGravityReversed) ctx.fillStyle = 'rgba(50, 0, 0, 1)';
             else ctx.fillStyle = '#080811';
-            
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             let leaderY = isGravityReversed ? MAP_HEIGHT : 0; 
@@ -519,49 +507,34 @@
                     if (isGravityReversed && m.position.y < leaderY) leaderY = m.position.y;
                 }
             });
-            
             if (!isGravityReversed && leaderY === 0 && finishedMarbles.length > 0) leaderY = MAP_HEIGHT; 
 
             let viewHeightInWorld = canvas.height / cameraZoom;
-            
-            let targetCameraY = isGravityReversed 
-                ? leaderY - (viewHeightInWorld * 0.3) 
-                : leaderY - (viewHeightInWorld * 0.7); 
-            
+            let targetCameraY = isGravityReversed ? leaderY - (viewHeightInWorld * 0.3) : leaderY - (viewHeightInWorld * 0.7); 
             if (targetCameraY < -500) targetCameraY = -500;
             if (targetCameraY > MAP_HEIGHT - viewHeightInWorld + 200) targetCameraY = MAP_HEIGHT - viewHeightInWorld + 200;
-            
             cameraY += (targetCameraY - cameraY) * 0.1;
 
             ctx.save();
-            ctx.translate(canvas.width / 2, 0); 
-            ctx.scale(cameraZoom, cameraZoom);
-            ctx.translate(-MAP_WIDTH / 2, -cameraY);
+            ctx.translate(canvas.width / 2, 0); ctx.scale(cameraZoom, cameraZoom); ctx.translate(-MAP_WIDTH / 2, -cameraY);
 
             // 1. 블랙홀
             blackholes.forEach(bh => {
                 let gradient = ctx.createRadialGradient(bh.x, bh.y, bh.radius * 0.1, bh.x, bh.y, bh.radius);
-                gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
-                gradient.addColorStop(0.3, 'rgba(128, 0, 255, 0.5)');
-                gradient.addColorStop(1, 'rgba(128, 0, 255, 0)');
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 1)'); gradient.addColorStop(0.3, 'rgba(128, 0, 255, 0.5)'); gradient.addColorStop(1, 'rgba(128, 0, 255, 0)');
                 ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(bh.x, bh.y, bh.radius, 0, 2 * Math.PI); ctx.fill();
 
                 ctx.save(); ctx.translate(bh.x, bh.y); ctx.rotate(bh.rotation);
                 ctx.strokeStyle = 'rgba(200, 100, 255, 0.6)'; ctx.lineWidth = 3;
-                for(let i=0; i<8; i++) { 
-                    ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(bh.radius * 0.6, bh.radius * 0.6, bh.radius, 0); ctx.stroke(); ctx.rotate((Math.PI * 2) / 8);
-                }
+                for(let i=0; i<8; i++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(bh.radius * 0.6, bh.radius * 0.6, bh.radius, 0); ctx.stroke(); ctx.rotate((Math.PI * 2) / 8); }
                 ctx.restore();
                 
-                ctx.fillStyle = '#000'; ctx.strokeStyle = '#a020f0'; ctx.lineWidth = 4;
-                ctx.shadowColor = '#a020f0'; ctx.shadowBlur = 20;
+                ctx.fillStyle = '#000'; ctx.strokeStyle = '#a020f0'; ctx.lineWidth = 4; ctx.shadowColor = '#a020f0'; ctx.shadowBlur = 20;
                 ctx.beginPath(); ctx.arc(bh.x, bh.y, bh.radius * 0.1, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
             });
 
-            // 2. 일반 벽 & 방지턱
-            ctx.fillStyle = 'rgba(0, 240, 255, 0.1)';
-            ctx.strokeStyle = '#00f0ff';
-            ctx.lineWidth = 3;
+            // 2. 일반 벽
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.1)'; ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 3;
             world.bodies.forEach(body => {
                 if (body.label === 'wall' || body.label === 'seesaw') {
                     ctx.beginPath();
@@ -575,40 +548,30 @@
                 }
             });
 
-            // 3. 특수 객체들
+            // 3. 특수 객체
             let bounce = Math.sin(Date.now() / 200) * 5;
             world.bodies.forEach(body => {
                 if (body.label === 'boost') {
-                    ctx.fillStyle = 'rgba(0, 255, 0, 0.3)'; ctx.strokeStyle = '#0f0'; ctx.lineWidth = 4;
-                    ctx.shadowColor = '#0f0'; ctx.shadowBlur = 15;
+                    ctx.fillStyle = 'rgba(0, 255, 0, 0.3)'; ctx.strokeStyle = '#0f0'; ctx.lineWidth = 4; ctx.shadowColor = '#0f0'; ctx.shadowBlur = 15;
                     ctx.beginPath(); body.vertices.forEach((v, i) => i===0 ? ctx.moveTo(v.x, v.y) : ctx.lineTo(v.x, v.y)); ctx.closePath();
                     ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
                     ctx.fillStyle = '#0f0'; ctx.font = 'bold 35px Arial'; ctx.textAlign = 'center'; ctx.fillText('↓↓ BOOST ↓↓', body.position.x, body.position.y + 12);
                 } 
                 else if (body.label === 'lucky_box') {
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-                    let hue = (Date.now() / 10) % 360;
-                    ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
-                    ctx.lineWidth = 4;
-                    ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 20;
-                    
-                    drawRoundRect(ctx, body.bounds.min.x, body.bounds.min.y + bounce, 50, 50, 8);
-                    ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+                    let hue = (Date.now() / 10) % 360; ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`; ctx.lineWidth = 4; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 20;
+                    drawRoundRect(ctx, body.bounds.min.x, body.bounds.min.y + bounce, 50, 50, 8); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
                     ctx.fillStyle = '#fff'; ctx.font = 'bold 35px Arial'; ctx.textAlign = 'center'; ctx.fillText('?', body.position.x, body.position.y + 12 + bounce);
                 }
                 else if (body.label === 'mine') {
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)'; ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 3;
-                    ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 15;
-                    ctx.beginPath(); ctx.arc(body.position.x, body.position.y, body.circleRadius + bounce*0.5, 0, 2*Math.PI);
-                    ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)'; ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 3; ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 15;
+                    ctx.beginPath(); ctx.arc(body.position.x, body.position.y, body.circleRadius + bounce*0.5, 0, 2*Math.PI); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
                     ctx.fillStyle = '#fff'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center'; ctx.fillText('❌', body.position.x, body.position.y + 8);
                 }
                 else if (body.label === 'gravity_switch') {
-                    ctx.fillStyle = 'rgba(255, 50, 50, 0.5)'; ctx.strokeStyle = '#ff0055'; ctx.lineWidth = 5;
-                    ctx.shadowColor = '#ff0055'; ctx.shadowBlur = 30 + bounce*2;
-                    drawRoundRect(ctx, body.bounds.min.x, body.bounds.min.y, 200, 40, 15);
-                    ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
-                    ctx.fillStyle = '#fff'; ctx.font = 'bold 28px "Malgun Gothic"'; ctx.textAlign = 'center'; ctx.fillText('⚠️ 중력 반전 스위치 ⚠️', body.position.x, body.position.y + 10);
+                    ctx.fillStyle = 'rgba(255, 50, 50, 0.5)'; ctx.strokeStyle = '#ff0055'; ctx.lineWidth = 8; ctx.shadowColor = '#ff0055'; ctx.shadowBlur = 30 + bounce*2;
+                    drawRoundRect(ctx, body.bounds.min.x, body.bounds.min.y, body.bounds.max.x - body.bounds.min.x, 50, 15); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+                    ctx.fillStyle = '#fff'; ctx.font = '900 35px "Malgun Gothic"'; ctx.textAlign = 'center'; ctx.fillText('⚠️ 중력 반전 스위치 ⚠️', body.position.x, body.position.y + 15);
                 }
             });
 
@@ -616,8 +579,7 @@
             world.bodies.forEach(body => {
                 if (body.label === 'pin') {
                     ctx.beginPath(); ctx.arc(body.position.x, body.position.y, body.circleRadius, 0, 2*Math.PI);
-                    ctx.fillStyle = 'rgba(255, 255, 0, 0.2)'; ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 3;
-                    ctx.shadowColor = '#ffff00'; ctx.shadowBlur = 10;
+                    ctx.fillStyle = 'rgba(255, 255, 0, 0.2)'; ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 3; ctx.shadowColor = '#ffff00'; ctx.shadowBlur = 10;
                     ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
                 }
             });
@@ -630,11 +592,9 @@
 
             // 파티클
             for (let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i];
-                p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.02;
                 if (p.life <= 0) { particles.splice(i, 1); continue; }
-                ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
-                ctx.fillRect(p.x, p.y, 8, 8); 
+                ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 8, 8); 
             }
             ctx.globalAlpha = 1.0;
 
@@ -644,6 +604,7 @@
             marbles.forEach(marble => {
                 const plugin = marble.plugin;
                 
+                // 결승선 통과 처리
                 if (!plugin.finished && marble.position.y > FINISH_LINE) {
                     plugin.finished = true;
                     plugin.rank = finishedMarbles.length + 1;
@@ -651,7 +612,7 @@
                     createParticles(marble.position.x, marble.position.y, plugin.color, 80);
                     
                     if(finishedMarbles.length === marbles.length) {
-                        setTimeout(() => document.getElementById('ui-panel').style.transform = 'translateY(0)', 2000);
+                        setTimeout(() => document.getElementById('ui-panel').style.transform = 'translateY(0)', 3000);
                     }
                 }
 
@@ -689,23 +650,25 @@
                 const badgeY = marble.position.y - marble.circleRadius - badgeHeight - (plugin.effect === 'giant' ? 15 : 10);
 
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                drawRoundRect(ctx, badgeX, badgeY, badgeWidth, badgeHeight, 10);
-                ctx.fill();
+                drawRoundRect(ctx, badgeX, badgeY, badgeWidth, badgeHeight, 10); ctx.fill();
                 ctx.strokeStyle = plugin.color; ctx.lineWidth = 2; ctx.stroke();
-
                 ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
                 ctx.fillText(plugin.name, marble.position.x, badgeY + (plugin.effect === 'giant' ? 35 : (plugin.effect === 'mini' ? 18 : 28)));
                 
                 if (plugin.finished) {
-                    const rankStr = plugin.rank + '등';
-                    ctx.font = '900 36px "Malgun Gothic", sans-serif';
+                    // 커피 내기 당첨 여부 확인
+                    const isLoser = plugin.rank > totalPlayers - numLosers;
+                    const rankStr = isLoser ? '☕ 당첨!' : plugin.rank + '등';
+                    
+                    ctx.font = '900 40px "Malgun Gothic", sans-serif';
                     const rWidth = ctx.measureText(rankStr).width;
                     
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                    drawRoundRect(ctx, marble.position.x - rWidth/2 - 15, marble.position.y - marble.circleRadius - 100, rWidth + 30, 45, 10);
+                    // 꼴등은 붉은색 배경으로 강조
+                    ctx.fillStyle = isLoser ? 'rgba(200, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.8)';
+                    drawRoundRect(ctx, marble.position.x - rWidth/2 - 20, marble.position.y - marble.circleRadius - 110, rWidth + 40, 50, 10);
                     ctx.fill();
-                    ctx.fillStyle = 'gold'; 
-                    ctx.fillText(rankStr, marble.position.x, marble.position.y - marble.circleRadius - 65);
+                    ctx.fillStyle = isLoser ? '#ffffff' : 'gold'; 
+                    ctx.fillText(rankStr, marble.position.x, marble.position.y - marble.circleRadius - 70);
                 }
             });
 
@@ -726,11 +689,16 @@
             sorted.forEach((marble, idx) => {
                 const rank = idx + 1;
                 let cssClass = 'rank-item';
-                if(rank === 1) cssClass += ' rank-1';
-                else if(rank === 2) cssClass += ' rank-2';
-                else if(rank === 3) cssClass += ' rank-3';
+                
+                // 커피 당첨자 리스트 시각 효과
+                const isLoser = marble.plugin.finished && marble.plugin.rank > totalPlayers - numLosers;
+                
+                if (isLoser) cssClass += ' rank-loser';
+                else if (rank === 1) cssClass += ' rank-1';
+                else if (rank === 2) cssClass += ' rank-2';
+                else if (rank === 3) cssClass += ' rank-3';
 
-                let status = marble.plugin.finished ? '🏁 도착' : Math.floor((marble.position.y / FINISH_LINE) * 100) + '%';
+                let status = marble.plugin.finished ? (isLoser ? '☕ 커피!' : '🏁 통과') : Math.floor((marble.position.y / FINISH_LINE) * 100) + '%';
                 if(marble.position.y < 0) status = '대기중';
 
                 let icon = '';
@@ -744,7 +712,7 @@
                                 <span style="display:inline-block; width:14px; height:14px; border-radius:50%; background-color:${marble.plugin.color}; margin-right:10px; box-shadow:0 0 8px ${marble.plugin.color}"></span>
                                 <span>${marble.plugin.name} ${icon}</span>
                             </div>
-                            <span class="text-sm text-gray-300">${status}</span>
+                            <span class="text-sm ${isLoser ? 'text-red-300' : 'text-gray-300'}">${status}</span>
                          </div>`;
             });
             document.getElementById('rank-list').innerHTML = html;
