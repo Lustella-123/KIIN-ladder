@@ -12,8 +12,7 @@
         
         #ui-panel { position: absolute; top: 20px; left: 20px; width: 340px; z-index: 10; background: rgba(15, 15, 25, 0.85); padding: 20px; border-radius: 12px; border: 1px solid #0ff; backdrop-filter: blur(8px); box-shadow: 0 0 20px rgba(0,255,255,0.2); transition: transform 0.4s ease-in-out; max-height: 95vh; overflow-y: auto; }
         
-        /* 리더보드 투명화 및 가독성 개선 */
-        #leaderboard { position: absolute; top: 20px; right: 20px; width: 260px; z-index: 10; background: rgba(15, 15, 25, 0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(0, 255, 255, 0.4); backdrop-filter: blur(4px); color: white; display: none; text-shadow: 1px 1px 2px #000; }
+        #leaderboard { position: absolute; top: 20px; right: 20px; width: 260px; z-index: 10; background: rgba(15, 15, 25, 0.6); padding: 15px; border-radius: 12px; border: 1px solid rgba(0, 255, 255, 0.4); backdrop-filter: blur(4px); color: white; display: none; text-shadow: 1px 1px 2px #000; }
         
         #gravity-warning { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20; color: #ff0055; font-size: 80px; font-weight: 900; text-shadow: 0 0 20px #ff0055, 0 0 40px #ff0055; display: none; text-align: center; pointer-events: none; }
         
@@ -24,15 +23,14 @@
         @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
         .neon-text { color: #fff; text-shadow: 0 0 5px #fff, 0 0 15px #0ff, 0 0 30px #0ff; }
-        .btn-neon { background: linear-gradient(45deg, #00f2fe, #4facfe); border: none; color: white; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; text-transform: uppercase; box-shadow: 0 0 15px rgba(0, 242, 254, 0.4); margin-top: 15px; }
-        .btn-neon:hover { transform: scale(1.02); box-shadow: 0 0 25px rgba(0, 242, 254, 0.7); }
-        .btn-reset { background: linear-gradient(45deg, #ff0844, #ffb199); margin-top: 10px; box-shadow: 0 0 15px rgba(255, 8, 68, 0.4); border: 1px solid #ff0844; }
+        .btn-neon { background: linear-gradient(45deg, #00f2fe, #4facfe); border: none; color: white; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; text-transform: uppercase; }
+        .btn-neon:hover { transform: scale(1.02); }
+        .btn-reset { background: linear-gradient(45deg, #ff0844, #ffb199); margin-top: 10px; border: 1px solid #ff0844; }
         
-        input { width: 100%; padding: 10px; margin: 10px 0; background: #1a1a24; border: 1px solid #0ff; color: #fff; border-radius: 8px; outline: none; transition: 0.3s; }
-        input:focus { box-shadow: 0 0 15px rgba(0, 255, 255, 0.5); }
+        input { width: 100%; padding: 10px; margin: 10px 0; background: #1a1a24; border: 1px solid #0ff; color: #fff; border-radius: 8px; outline: none; }
         
-        .rank-item { padding: 8px; margin-bottom: 5px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; font-weight: bold; transition: all 0.3s; border-left: 2px solid transparent; }
-        .rank-1 { background: linear-gradient(90deg, rgba(255,215,0,0.3), transparent); border-left: 4px solid gold; transform: scale(1.05); margin-left: 5px; }
+        .rank-item { padding: 8px; margin-bottom: 5px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; font-weight: bold; border-left: 2px solid transparent; }
+        .rank-1 { background: linear-gradient(90deg, rgba(255,215,0,0.3), transparent); border-left: 4px solid gold; margin-left: 5px; }
         .rank-2 { background: linear-gradient(90deg, rgba(192,192,192,0.3), transparent); border-left: 4px solid silver; }
         .rank-3 { background: linear-gradient(90deg, rgba(205,127,50,0.3), transparent); border-left: 4px solid #cd7f32; }
 
@@ -73,16 +71,13 @@
 
     <div id="gravity-warning">GRAVITY<br>REVERSED!!</div>
 
-    <!-- 결과 모달창 -->
     <div id="result-modal">
         <div class="result-box">
             <h2 class="text-4xl font-black text-yellow-400 mb-2">🎉 레이싱 종료! 🎉</h2>
             <p class="text-gray-300 mb-6 border-b border-gray-600 pb-4">치열한 승부가 끝났습니다.</p>
             
             <h3 class="text-3xl font-bold text-white mb-4">☕ 당첨! ☕</h3>
-            <div id="losers-list" class="bg-gray-800/50 p-4 rounded-lg border border-red-500 mb-6">
-                <!-- 벌칙자 목록 렌더링 -->
-            </div>
+            <div id="losers-list" class="bg-gray-800/50 p-4 rounded-lg border border-red-500 mb-6"></div>
             
             <button onclick="closeResult()" class="btn-neon mt-4" style="background: linear-gradient(45deg, #11998e, #38ef7d);">다시 하기 (맵 초기화)</button>
         </div>
@@ -122,11 +117,14 @@
         const BASE_GRAVITY = 1.8;
         
         const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false }); // 알파 채널 비활성화로 렌더링 성능 최적화
         const colors = ['#00ffff', '#ff00ff', '#00ff00', '#ffff00', '#ff5500', '#0088ff', '#ff0055', '#aaff00', '#ffffff', '#ff8800', '#ffb0b0', '#b0ffb0'];
+
+        let frameCounter = 0; // 랭킹 업데이트 최적화를 위한 카운터
 
         function init() {
             engine = Engine.create();
+            engine.enableSleeping = true; 
             world = engine.world;
             world.gravity.y = BASE_GRAVITY; 
 
@@ -135,7 +133,7 @@
 
             buildMap();
 
-            runner = Runner.create();
+            runner = Runner.create({ isFixed: true, delta: 1000 / 60 });
             Runner.run(runner, engine);
 
             Events.on(engine, 'collisionStart', handleCollisions);
@@ -315,7 +313,7 @@
                     restitution: 0.6, friction: 0.001, frictionAir: 0.015, density: 0.05,
                     label: 'marble',
                     plugin: { 
-                        name: name, color: color, trail: [], finished: false, rank: 0, currentRank: 0,
+                        name: name, color: color, trail: [], finished: false, stopped: false, rank: 0, currentRank: 0,
                         stuckTimer: 0, effect: 'none', effectTimer: 0, baseRadius: 24
                     }
                 });
@@ -328,10 +326,11 @@
 
         function triggerMine(mineBody, triggerMarble) {
             Body.setPosition(mineBody, { x: -1000, y: -1000 });
-            createParticles(mineBody.position.x, mineBody.position.y, '#ff0055', 80, 30); 
+            createParticles(mineBody.position.x, mineBody.position.y, '#ff0055', 40, 30); 
             const explosionRadius = 250;
             const explosionForce = 0.5;
             marbles.forEach(marble => {
+                if(marble.plugin.finished) return;
                 let dx = marble.position.x - mineBody.position.x;
                 let dy = marble.position.y - mineBody.position.y;
                 let distSq = dx*dx + dy*dy;
@@ -351,14 +350,14 @@
             
             if (effect === 'giant') {
                 marble.plugin.effectTimer = 400; Body.scale(marble, 2.5, 2.5); Body.setDensity(marble, 0.2); 
-                createParticles(marble.position.x, marble.position.y, '#ffff00', 50);
+                createParticles(marble.position.x, marble.position.y, '#ffff00', 30);
             } else if (effect === 'mini') {
                 marble.plugin.effectTimer = 400; Body.scale(marble, 0.5, 0.5); Body.setDensity(marble, 0.05); 
-                createParticles(marble.position.x, marble.position.y, '#00ffff', 50);
+                createParticles(marble.position.x, marble.position.y, '#00ffff', 30);
             } else if (effect === 'freeze') {
                 marble.plugin.effectTimer = 120; marble.plugin.savedVelocity = { ...marble.velocity };
                 Body.setVelocity(marble, {x:0, y:0}); Body.setStatic(marble, true); 
-                createParticles(marble.position.x, marble.position.y, '#ffffff', 50);
+                createParticles(marble.position.x, marble.position.y, '#ffffff', 30);
             }
         }
 
@@ -368,7 +367,7 @@
             gravityTimer = GRAVITY_DURATION;
             world.gravity.y = -BASE_GRAVITY; 
             document.getElementById('gravity-warning').style.display = 'block';
-            createParticles(MAP_WIDTH/2, gravitySwitch.position.y, '#ff0000', 150, 50);
+            createParticles(MAP_WIDTH/2, gravitySwitch.position.y, '#ff0000', 100, 50);
         }
 
         function showResultScreen() {
@@ -408,8 +407,12 @@
                 bh.rotation += 0.08; 
                 marbles.forEach(marble => {
                     if (marble.plugin.finished) return;
+                    
                     let dx = bh.x - marble.position.x;
+                    if (Math.abs(dx) > bh.radius) return;
                     let dy = bh.y - marble.position.y;
+                    if (Math.abs(dy) > bh.radius) return;
+
                     let distSq = dx*dx + dy*dy;
                     if (distSq < bh.radius * bh.radius) {
                         let dist = Math.sqrt(distSq);
@@ -476,7 +479,7 @@
                             Body.setStatic(marble, false); Body.setVelocity(marble, marble.plugin.savedVelocity);
                         }
                         marble.plugin.effect = 'none';
-                        createParticles(marble.position.x, marble.position.y, marble.plugin.color, 30);
+                        createParticles(marble.position.x, marble.position.y, marble.plugin.color, 20);
                     }
                 }
             });
@@ -487,7 +490,7 @@
                 let bodyA = pair.bodyA; let bodyB = pair.bodyB;
                 if (bodyA.label === 'blackhole_core' || bodyB.label === 'blackhole_core') {
                     let marble = bodyA.label === 'marble' ? bodyA : (bodyB.label === 'marble' ? bodyB : null);
-                    if(marble) createParticles(marble.position.x, marble.position.y, '#a020f0', 10);
+                    if(marble) createParticles(marble.position.x, marble.position.y, '#a020f0', 5);
                 }
             });
         }
@@ -508,7 +511,6 @@
                 if (sensor) {
                     if (sensor.label === 'boost') {
                         Body.applyForce(marble, marble.position, { x: 0, y: 0.1 * (marble.mass / 0.09) * (isGravityReversed ? -1 : 1) }); 
-                        createParticles(marble.position.x, marble.position.y - 20, '#0f0', 3);
                     } 
                     else if (sensor.label === 'mine') { triggerMine(sensor, marble); }
                     else if (sensor.label === 'lucky_box' && marble.plugin.effect === 'none') { triggerLuckyBox(sensor, marble); }
@@ -519,12 +521,9 @@
             });
         }
 
-        function createParticles(x, y, color, count, speed=20) {
+        function createParticles(x, y, color, count, speed=15) {
+            if (particles.length > 200) return; 
             for(let i=0; i<count; i++) particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * speed, vy: (Math.random() - 0.5) * speed, life: 1.0, color: color });
-        }
-
-        function drawRoundRect(ctx, x, y, width, height, radius) {
-            ctx.beginPath(); ctx.moveTo(x + radius, y); ctx.lineTo(x + width - radius, y); ctx.quadraticCurveTo(x + width, y, x + width, y + radius); ctx.lineTo(x + width, y + height - radius); ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height); ctx.lineTo(x + radius, y + height); ctx.quadraticCurveTo(x, y + height, x, y + height - radius); ctx.lineTo(x, y + radius); ctx.quadraticCurveTo(x, y, x + radius, y); ctx.closePath();
         }
 
         function createFireworks() {
@@ -532,17 +531,17 @@
                 setTimeout(() => {
                     let fx = MAP_WIDTH/2 + (Math.random() - 0.5) * MAP_WIDTH * 0.8;
                     let fy = FINISH_LINE - 200 - Math.random() * 300;
-                    createParticles(fx, fy, colors[Math.floor(Math.random() * colors.length)], 80, 25);
+                    createParticles(fx, fy, colors[Math.floor(Math.random() * colors.length)], 50, 20);
                 }, i * 300);
             }
         }
 
         function render() {
-            if (isGravityReversed) ctx.fillStyle = 'rgba(50, 0, 0, 1)';
-            else ctx.fillStyle = '#080811';
+            frameCounter++;
+
+            ctx.fillStyle = isGravityReversed ? '#2b0000' : '#080811';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 카메라 타겟: "항상 맵 가장 아래쪽(결승선 쪽)에 있는 마블"
             let leaderY = 0; 
             marbles.forEach(m => {
                 if (!m.plugin.finished && m.position.y > leaderY) {
@@ -554,15 +553,14 @@
             let viewHeightInWorld = canvas.height / cameraZoom;
             let targetCameraY = leaderY - (viewHeightInWorld * 0.7); 
             
-            // 🌟 역주행(어지러움) 방지 로직: 카메라는 오직 아래로만 스크롤됨
-            // 현재 카메라 위치(cameraY)보다 타겟이 더 위쪽(작은 값)이면, 원래 위치 유지
             targetCameraY = Math.max(cameraY, targetCameraY);
-
-            // 맵 밖으로 카메라가 넘어가는 것 방지
             if (targetCameraY < -500) targetCameraY = -500;
             if (targetCameraY > MAP_HEIGHT - viewHeightInWorld + 200) targetCameraY = MAP_HEIGHT - viewHeightInWorld + 200;
             
             cameraY += (targetCameraY - cameraY) * 0.08;
+
+            const viewTop = cameraY - 100;
+            const viewBottom = cameraY + viewHeightInWorld + 100;
 
             ctx.save();
             ctx.translate(canvas.width / 2, 0); 
@@ -570,80 +568,93 @@
             ctx.translate(-MAP_WIDTH / 2, -cameraY);
 
             blackholes.forEach(bh => {
+                if (bh.y + bh.radius < viewTop || bh.y - bh.radius > viewBottom) return;
+
                 let gradient = ctx.createRadialGradient(bh.x, bh.y, bh.radius * 0.1, bh.x, bh.y, bh.radius);
-                gradient.addColorStop(0, 'rgba(0, 0, 0, 1)'); gradient.addColorStop(0.3, 'rgba(128, 0, 255, 0.5)'); gradient.addColorStop(1, 'rgba(128, 0, 255, 0)');
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 1)'); gradient.addColorStop(0.3, 'rgba(128, 0, 255, 0.4)'); gradient.addColorStop(1, 'rgba(128, 0, 255, 0)');
                 ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(bh.x, bh.y, bh.radius, 0, 2 * Math.PI); ctx.fill();
 
                 ctx.save(); ctx.translate(bh.x, bh.y); ctx.rotate(bh.rotation);
-                ctx.strokeStyle = 'rgba(200, 100, 255, 0.6)'; ctx.lineWidth = 3;
+                ctx.strokeStyle = 'rgba(200, 100, 255, 0.6)'; ctx.lineWidth = 2;
                 for(let i=0; i<8; i++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(bh.radius * 0.6, bh.radius * 0.6, bh.radius, 0); ctx.stroke(); ctx.rotate((Math.PI * 2) / 8); }
                 ctx.restore();
                 
-                ctx.fillStyle = '#000'; ctx.strokeStyle = '#a020f0'; ctx.lineWidth = 4; ctx.shadowColor = '#a020f0'; ctx.shadowBlur = 20;
-                ctx.beginPath(); ctx.arc(bh.x, bh.y, bh.radius * 0.1, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+                ctx.fillStyle = '#000'; ctx.strokeStyle = '#a020f0'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(bh.x, bh.y, bh.radius * 0.1, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
             });
 
-            ctx.fillStyle = 'rgba(0, 240, 255, 0.1)'; ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 3;
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.1)'; ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 2;
+            ctx.beginPath();
             world.bodies.forEach(body => {
+                if (body.bounds.max.y < viewTop || body.bounds.min.y > viewBottom) return;
                 if (body.label === 'wall' || body.label === 'seesaw') {
-                    ctx.beginPath();
                     body.parts.forEach((part, i) => {
                         if (i === 0 && body.parts.length > 1) return; 
                         ctx.moveTo(part.vertices[0].x, part.vertices[0].y);
                         for (let j = 1; j < part.vertices.length; j++) ctx.lineTo(part.vertices[j].x, part.vertices[j].y);
                         ctx.lineTo(part.vertices[0].x, part.vertices[0].y);
                     });
-                    ctx.fill(); ctx.stroke();
                 }
             });
+            ctx.fill(); ctx.stroke();
 
-            let bounce = Math.sin(Date.now() / 200) * 5;
+            ctx.fillStyle = 'rgba(255, 255, 0, 0.2)'; ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 2; 
+            ctx.beginPath();
             world.bodies.forEach(body => {
+                if (body.bounds.max.y < viewTop || body.bounds.min.y > viewBottom) return;
+                if (body.label === 'pin') {
+                    ctx.moveTo(body.position.x + body.circleRadius, body.position.y);
+                    ctx.arc(body.position.x, body.position.y, body.circleRadius, 0, 2*Math.PI);
+                }
+            });
+            ctx.fill(); ctx.stroke();
+
+            world.bodies.forEach(body => {
+                if (body.bounds.max.y < viewTop || body.bounds.min.y > viewBottom) return;
+
                 if (body.label === 'boost') {
-                    ctx.fillStyle = 'rgba(0, 255, 0, 0.3)'; ctx.strokeStyle = '#0f0'; ctx.lineWidth = 4; ctx.shadowColor = '#0f0'; ctx.shadowBlur = 15;
-                    ctx.beginPath(); body.vertices.forEach((v, i) => i===0 ? ctx.moveTo(v.x, v.y) : ctx.lineTo(v.x, v.y)); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
-                    ctx.fillStyle = '#0f0'; ctx.font = 'bold 35px Arial'; ctx.textAlign = 'center'; ctx.fillText('↓↓ BOOST ↓↓', body.position.x, body.position.y + 12);
+                    ctx.fillStyle = 'rgba(0, 255, 0, 0.3)'; ctx.strokeStyle = '#0f0'; ctx.lineWidth = 3; 
+                    ctx.beginPath(); body.vertices.forEach((v, i) => i===0 ? ctx.moveTo(v.x, v.y) : ctx.lineTo(v.x, v.y)); ctx.closePath(); ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = '#0f0'; ctx.font = 'bold 30px Arial'; ctx.textAlign = 'center'; ctx.fillText('↓↓ BOOST ↓↓', body.position.x, body.position.y + 10);
                 } 
                 else if (body.label === 'lucky_box') {
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; let hue = (Date.now() / 10) % 360; ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`; ctx.lineWidth = 4; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 20;
-                    drawRoundRect(ctx, body.bounds.min.x, body.bounds.min.y + bounce, 50, 50, 8); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
-                    ctx.fillStyle = '#fff'; ctx.font = 'bold 35px Arial'; ctx.textAlign = 'center'; ctx.fillText('?', body.position.x, body.position.y + 12 + bounce);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.rect(body.bounds.min.x, body.bounds.min.y, 50, 50); ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 30px Arial'; ctx.textAlign = 'center'; ctx.fillText('?', body.position.x, body.position.y + 10);
                 }
                 else if (body.label === 'mine') {
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)'; ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 3; ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 15;
-                    ctx.beginPath(); ctx.arc(body.position.x, body.position.y, body.circleRadius + bounce*0.5, 0, 2*Math.PI); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
-                    ctx.fillStyle = '#fff'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center'; ctx.fillText('❌', body.position.x, body.position.y + 8);
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)'; ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.arc(body.position.x, body.position.y, body.circleRadius, 0, 2*Math.PI); ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center'; ctx.fillText('❌', body.position.x, body.position.y + 7);
                 }
                 else if (body.label === 'gravity_switch') {
-                    ctx.fillStyle = 'rgba(255, 50, 50, 0.3)'; ctx.strokeStyle = '#ff0055'; ctx.lineWidth = 5; ctx.shadowColor = '#ff0055'; ctx.shadowBlur = 30 + bounce*2;
-                    ctx.beginPath(); ctx.rect(body.bounds.min.x, body.bounds.min.y, body.bounds.max.x - body.bounds.min.x, body.bounds.max.y - body.bounds.min.y); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
-                    
-                    ctx.fillStyle = '#fff'; ctx.font = 'bold 45px "Malgun Gothic"'; ctx.textAlign = 'center'; ctx.shadowColor = '#000'; ctx.shadowBlur = 10;
-                    ctx.fillText('⚠️ 중력 반전 절대선 ⚠️', MAP_WIDTH/2, body.position.y + 15); ctx.shadowBlur = 0;
+                    ctx.fillStyle = 'rgba(255, 50, 50, 0.3)'; ctx.strokeStyle = '#ff0055'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.rect(body.bounds.min.x, body.bounds.min.y, body.bounds.max.x - body.bounds.min.x, body.bounds.max.y - body.bounds.min.y); ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 45px "Malgun Gothic"'; ctx.textAlign = 'center'; 
+                    ctx.fillText('⚠️ 중력 반전 절대선 ⚠️', MAP_WIDTH/2, body.position.y + 15);
                 }
             });
 
-            world.bodies.forEach(body => {
-                if (body.label === 'pin') {
-                    ctx.beginPath(); ctx.arc(body.position.x, body.position.y, body.circleRadius, 0, 2*Math.PI);
-                    ctx.fillStyle = 'rgba(255, 255, 0, 0.2)'; ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 3; ctx.shadowColor = '#ffff00'; ctx.shadowBlur = 10;
-                    ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
-                }
-            });
-
-            ctx.beginPath(); ctx.moveTo(0, FINISH_LINE); ctx.lineTo(MAP_WIDTH, FINISH_LINE);
-            ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 10; ctx.setLineDash([30, 20]); ctx.stroke(); ctx.setLineDash([]);
-            ctx.fillStyle = '#ffff00'; ctx.font = 'bold 60px sans-serif'; ctx.textAlign = 'center'; 
-            ctx.fillText('🏆 FINISH LINE 🏆', MAP_WIDTH/2, FINISH_LINE - 30);
+            if (FINISH_LINE > viewTop && FINISH_LINE < viewBottom) {
+                ctx.beginPath(); ctx.moveTo(0, FINISH_LINE); ctx.lineTo(MAP_WIDTH, FINISH_LINE);
+                ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 8; ctx.setLineDash([30, 20]); ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = '#ffff00'; ctx.font = 'bold 60px sans-serif'; ctx.textAlign = 'center'; 
+                ctx.fillText('🏆 FINISH LINE 🏆', MAP_WIDTH/2, FINISH_LINE - 30);
+            }
 
             for (let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+                let p = particles[i]; 
+                p.x += p.vx; p.y += p.vy; p.life -= 0.03;
                 if (p.life <= 0) { particles.splice(i, 1); continue; }
-                ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 8, 8); 
+                if (p.y >= viewTop && p.y <= viewBottom) {
+                    ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 6, 6); 
+                }
             }
             ctx.globalAlpha = 1.0;
 
-            updateLeaderboard();
+            if (frameCounter % 15 === 0) {
+                updateLeaderboard();
+            }
 
             marbles.forEach(marble => {
                 const plugin = marble.plugin;
@@ -652,7 +663,14 @@
                     plugin.finished = true;
                     plugin.rank = finishedMarbles.length + 1;
                     finishedMarbles.push(marble);
-                    createParticles(marble.position.x, marble.position.y, plugin.color, 80);
+                    
+                    // [변경점] 바로 멈추지 않고 1초(1000ms) 뒤에 물리 연산 종료 (완전 정지)
+                    setTimeout(() => {
+                        plugin.stopped = true;
+                        Body.setStatic(marble, true);
+                    }, 1000);
+
+                    createParticles(marble.position.x, marble.position.y, plugin.color, 60);
                     
                     if(finishedMarbles.length === marbles.length) {
                         createFireworks();
@@ -660,69 +678,68 @@
                     }
                 }
 
-                if (plugin.effect !== 'freeze') plugin.trail.push({x: marble.position.x, y: marble.position.y});
-                if (plugin.trail.length > 30) plugin.trail.shift();
+                // [변경점] 꼬리 효과도 1초 동안은 계속 따라오게 만듦 (stopped 확인)
+                if (plugin.effect !== 'freeze' && !plugin.stopped) {
+                    plugin.trail.push({x: marble.position.x, y: marble.position.y});
+                    if (plugin.trail.length > 20) plugin.trail.shift(); 
+                }
 
                 if (plugin.trail.length > 1) {
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    ctx.shadowColor = plugin.color;
-                    ctx.shadowBlur = 15; 
-                    
-                    for (let i = 0; i < plugin.trail.length - 1; i++) {
-                        let p1 = plugin.trail[i];
-                        let p2 = plugin.trail[i+1];
-                        let ratio = (i + 1) / plugin.trail.length; 
-
+                    let p1 = plugin.trail[0];
+                    if (!(p1.y < viewTop - 100 || p1.y > viewBottom + 100)) {
+                        ctx.lineCap = 'round';
+                        ctx.lineJoin = 'round';
+                        ctx.lineWidth = marble.circleRadius * 1.2;
+                        ctx.strokeStyle = plugin.color;
+                        ctx.globalAlpha = 0.4;
+                        
                         ctx.beginPath();
                         ctx.moveTo(p1.x, p1.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        
-                        ctx.lineWidth = (marble.circleRadius * 1.5) * Math.pow(ratio, 2);
-                        ctx.strokeStyle = plugin.color;
-                        ctx.globalAlpha = Math.pow(ratio, 2) * 0.8;
+                        for (let i = 1; i < plugin.trail.length; i++) {
+                            ctx.lineTo(plugin.trail[i].x, plugin.trail[i].y);
+                        }
                         ctx.stroke();
+                        ctx.globalAlpha = 1.0;
                     }
-                    ctx.globalAlpha = 1.0;
-                    ctx.shadowBlur = 0; 
                 }
 
-                if (plugin.effect === 'giant') {
-                    ctx.beginPath(); ctx.arc(marble.position.x, marble.position.y, marble.circleRadius * 1.3, 0, 2*Math.PI);
-                    ctx.fillStyle = 'rgba(255, 255, 0, 0.3)'; ctx.fill();
-                } else if (plugin.effect === 'freeze') {
-                    ctx.beginPath(); ctx.arc(marble.position.x, marble.position.y, marble.circleRadius * 1.5, 0, 2*Math.PI);
-                    ctx.fillStyle = 'rgba(200, 255, 255, 0.6)'; ctx.fill(); 
-                }
+                if (marble.position.y >= viewTop - 100 && marble.position.y <= viewBottom + 100) {
+                    if (plugin.effect === 'giant') {
+                        ctx.beginPath(); ctx.arc(marble.position.x, marble.position.y, marble.circleRadius * 1.3, 0, 2*Math.PI);
+                        ctx.fillStyle = 'rgba(255, 255, 0, 0.3)'; ctx.fill();
+                    } else if (plugin.effect === 'freeze') {
+                        ctx.beginPath(); ctx.arc(marble.position.x, marble.position.y, marble.circleRadius * 1.5, 0, 2*Math.PI);
+                        ctx.fillStyle = 'rgba(200, 255, 255, 0.6)'; ctx.fill(); 
+                    }
 
-                ctx.beginPath(); ctx.arc(marble.position.x, marble.position.y, marble.circleRadius, 0, 2*Math.PI);
-                ctx.fillStyle = (plugin.effect === 'freeze') ? '#ccffff' : '#fff'; ctx.fill();
-                ctx.strokeStyle = plugin.color; ctx.lineWidth = 6;
-                ctx.shadowColor = plugin.color; ctx.shadowBlur = (plugin.effect !== 'none') ? 50 : 30; ctx.stroke(); ctx.shadowBlur = 0;
+                    ctx.beginPath(); ctx.arc(marble.position.x, marble.position.y, marble.circleRadius, 0, 2*Math.PI);
+                    ctx.fillStyle = (plugin.effect === 'freeze') ? '#ccffff' : '#fff'; ctx.fill();
+                    ctx.strokeStyle = plugin.color; ctx.lineWidth = 5;
+                    ctx.stroke(); 
 
-                let fontSize = (plugin.effect === 'giant') ? 40 : (plugin.effect === 'mini' ? 18 : 28);
-                ctx.font = `bold ${fontSize}px "Malgun Gothic", sans-serif`;
-                const textWidth = ctx.measureText(plugin.name).width;
-                const badgeWidth = textWidth + 24;
-                const badgeHeight = (plugin.effect === 'giant') ? 50 : (plugin.effect === 'mini' ? 25 : 40);
-                const badgeX = marble.position.x - badgeWidth / 2;
-                const badgeY = marble.position.y - marble.circleRadius - badgeHeight - (plugin.effect === 'giant' ? 15 : 10);
+                    let fontSize = (plugin.effect === 'giant') ? 34 : (plugin.effect === 'mini' ? 16 : 24);
+                    ctx.font = `bold ${fontSize}px "Malgun Gothic", sans-serif`;
+                    const textWidth = ctx.measureText(plugin.name).width;
+                    const badgeWidth = textWidth + 20;
+                    const badgeHeight = (plugin.effect === 'giant') ? 40 : (plugin.effect === 'mini' ? 20 : 32);
+                    const badgeX = marble.position.x - badgeWidth / 2;
+                    const badgeY = marble.position.y - marble.circleRadius - badgeHeight - (plugin.effect === 'giant' ? 15 : 10);
 
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                drawRoundRect(ctx, badgeX, badgeY, badgeWidth, badgeHeight, 10); ctx.fill();
-                ctx.strokeStyle = plugin.color; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    ctx.beginPath(); ctx.rect(badgeX, badgeY, badgeWidth, badgeHeight); ctx.fill(); 
+                    ctx.strokeStyle = plugin.color; ctx.lineWidth = 2; ctx.stroke();
 
-                ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
-                ctx.fillText(plugin.name, marble.position.x, badgeY + (plugin.effect === 'giant' ? 35 : (plugin.effect === 'mini' ? 18 : 28)));
-                
-                if (plugin.finished) {
-                    const rankStr = plugin.rank + '등';
-                    ctx.font = '900 36px "Malgun Gothic", sans-serif';
-                    const rWidth = ctx.measureText(rankStr).width;
+                    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(plugin.name, marble.position.x, badgeY + badgeHeight / 2);
                     
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                    drawRoundRect(ctx, marble.position.x - rWidth/2 - 15, marble.position.y - marble.circleRadius - 100, rWidth + 30, 45, 10); ctx.fill();
-                    ctx.fillStyle = 'gold'; ctx.fillText(rankStr, marble.position.x, marble.position.y - marble.circleRadius - 65);
+                    if (plugin.finished) {
+                        const rankStr = plugin.rank + '등';
+                        ctx.font = '900 36px "Malgun Gothic", sans-serif';
+                        const rWidth = ctx.measureText(rankStr).width;
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                        ctx.fillRect(marble.position.x - rWidth/2 - 15, marble.position.y - marble.circleRadius - 90, rWidth + 30, 45);
+                        ctx.fillStyle = 'gold'; ctx.fillText(rankStr, marble.position.x, marble.position.y - marble.circleRadius - 65);
+                    }
                 }
             });
 
@@ -762,8 +779,8 @@
                 html += `<div class="${cssClass}">
                             <div style="display:flex; align-items:center;">
                                 <span style="display:inline-block; width:25px; font-size:1.1em; text-align:center; margin-right:10px; color:#fff;">${rank}</span>
-                                <span style="display:inline-block; width:14px; height:14px; border-radius:50%; background-color:${marble.plugin.color}; margin-right:10px; box-shadow:0 0 8px ${marble.plugin.color}"></span>
-                                <span style="color:#fff; text-shadow:1px 1px 2px #000;">${marble.plugin.name} ${icon}</span>
+                                <span style="display:inline-block; width:14px; height:14px; border-radius:50%; background-color:${marble.plugin.color}; margin-right:10px;"></span>
+                                <span style="color:#fff;">${marble.plugin.name} ${icon}</span>
                             </div>
                             <span class="text-sm" style="color:#ddd;">${status}</span>
                          </div>`;
