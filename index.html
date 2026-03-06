@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KIIN 사다리게임</title>
+    <title>KIIN 프리미엄 사다리게임</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
@@ -22,9 +22,6 @@
         .tag-remove { cursor: pointer; color: #ff0055; font-weight: bold; width: 16px; height: 16px; display: inline-flex; justify-content: center; align-items: center; border-radius: 50%; }
         .tag-remove:hover { background: rgba(255,0,85,0.2); }
 
-        #gravity-warning { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20; color: #ff0055; font-size: 80px; font-weight: 900; letter-spacing: 5px; text-shadow: 0 0 20px #ff0055, 0 0 40px #ff0055; display: none; text-align: center; pointer-events: none; animation: pulse 1s infinite alternate; }
-        @keyframes pulse { from { opacity: 0.8; transform: translate(-50%, -50%) scale(0.95); } to { opacity: 1; transform: translate(-50%, -50%) scale(1.05); } }
-        
         #result-modal { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 50; display: none; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(15px); }
         .result-box { background: linear-gradient(145deg, #12121e, #0d0d16); border: 1px solid rgba(0, 255, 255, 0.4); border-radius: 24px; padding: 50px; width: 500px; max-width: 90%; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05); animation: popIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
         .loser-name { color: #ff0055; font-size: 1.8rem; font-weight: 800; text-shadow: 0 0 15px rgba(255,0,85,0.5); margin: 8px 0; background: rgba(255,0,85,0.1); padding: 8px; border-radius: 12px; }
@@ -45,7 +42,6 @@
         .rank-2 { background: linear-gradient(90deg, rgba(192,192,192,0.1), transparent); border-left: 4px solid silver; }
         .rank-3 { background: linear-gradient(90deg, rgba(205,127,50,0.1), transparent); border-left: 4px solid #cd7f32; }
 
-        .range-slider { width: 100%; margin-top: 8px; accent-color: #ff0055; }
     </style>
 </head>
 <body>
@@ -61,16 +57,18 @@
         <div id="player-tags" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-3 bg-black/30 rounded-lg border border-gray-700/50 mb-4">
         </div>
 
-        <div class="mb-6 bg-black/30 p-3 rounded-lg border border-gray-700/50">
-            <div class="flex justify-between items-center mb-1">
-                <label class="text-cyan-300 text-sm font-bold">당첨(벌칙) 인원</label>
-                <span id="penalty-count-display" class="text-white font-bold bg-red-500/20 px-2 py-0.5 rounded text-sm text-red-400">2 명</span>
-            </div>
-            <input type="range" id="penalty-slider" class="range-slider" min="1" max="5" value="2">
+        <div class="mb-6 bg-black/30 p-3 rounded-lg border border-gray-700/50 text-center">
+            <span class="text-cyan-300 text-sm font-bold">자동 당첨(벌칙) 인원 설정 (총 인원/4)</span><br>
+            <span id="penalty-count-display" class="text-2xl font-black text-red-400 mt-2 block">2 명</span>
         </div>
         
         <button id="start-btn" class="btn-neon">🚀 레이싱 시작!</button>
         <button id="reset-btn" class="btn-neon btn-reset">⟳ 코스 무작위 재배치</button>
+
+        <div class="mt-4 p-3 bg-gray-900/60 rounded-xl border border-gray-800 text-gray-300 text-xs">
+            <span class="text-yellow-400 font-bold">💡 스킬 효과 (자동 발동)</span><br>
+            약 3초마다 10% 확률로 주변 구슬을 <b>확 밀어내거나</b>(빨강), <b>끌어당겨서</b>(파랑) 순위 변동을 만듭니다.
+        </div>
     </div>
 
     <div id="leaderboard">
@@ -80,8 +78,6 @@
         </h2>
         <div id="rank-list"></div>
     </div>
-
-    <div id="gravity-warning">GRAVITY<br>REVERSED!!</div>
 
     <div id="result-modal">
         <div class="result-box">
@@ -98,23 +94,22 @@
     <canvas id="game-canvas"></canvas>
 
     <script>
-        // --- 1. 참가자 및 설정 저장 로직 (LocalStorage) ---
+        // --- 1. 참가자 및 설정 저장 로직 ---
         let playersData = ['철수', '영희', '민수', '지영', '동해', '백두', '한라', '태백'];
         let savedPlayers = localStorage.getItem('kiin_players');
         if (savedPlayers) {
             try { playersData = JSON.parse(savedPlayers); } catch(e) {}
         }
         
-        let savedPenalty = localStorage.getItem('kiin_penalty');
-        if (savedPenalty) {
-            document.getElementById('penalty-slider').value = savedPenalty;
-        }
-
         const colors = ['#00ffff', '#ff00ff', '#00ff00', '#ffff00', '#ff5500', '#0088ff', '#ff0055', '#aaff00', '#ffffff', '#ff8800', '#ffb0b0', '#b0ffb0'];
 
         function saveData() {
             localStorage.setItem('kiin_players', JSON.stringify(playersData));
-            localStorage.setItem('kiin_penalty', document.getElementById('penalty-slider').value);
+        }
+
+        function updatePenaltyDisplay() {
+            const count = Math.floor(playersData.length / 4);
+            document.getElementById('penalty-count-display').innerText = count + ' 명';
         }
 
         function renderPlayerTags() {
@@ -131,7 +126,7 @@
                 `;
                 container.appendChild(tag);
             });
-            updatePenaltySlider();
+            updatePenaltyDisplay();
             saveData();
         }
 
@@ -155,21 +150,9 @@
         });
         document.getElementById('add-player-btn').addEventListener('click', addPlayer);
 
-        function updatePenaltySlider() {
-            const slider = document.getElementById('penalty-slider');
-            slider.max = Math.max(1, playersData.length - 1);
-            if(parseInt(slider.value) > slider.max) slider.value = slider.max;
-            document.getElementById('penalty-count-display').innerText = slider.value + ' 명';
-        }
-
-        document.getElementById('penalty-slider').addEventListener('input', (e) => {
-            document.getElementById('penalty-count-display').innerText = e.target.value + ' 명';
-            saveData();
-        });
-
         renderPlayerTags();
 
-        // --- 2. 물리 엔진 및 게임 로직 (최적화 및 30초 플레이타임) ---
+        // --- 2. 물리 엔진 및 게임 로직 ---
         const Engine = Matter.Engine,
               Runner = Matter.Runner,
               Bodies = Matter.Bodies,
@@ -179,22 +162,15 @@
               Events = Matter.Events;
 
         let engine, runner, world;
-        let marbles = [], particles = [], finishedMarbles = [], sweepers = [], mines = [], luckyBoxes = [], blackholes = [];
-        let gravitySwitch = null;
+        let marbles = [], particles = [], finishedMarbles = [], skillRings = [];
         
         const MAP_WIDTH = 1600;
-        // 맵 길이를 줄여 30초 내외로 도착하도록 조정
         const MAP_HEIGHT = 7500; 
         const FINISH_LINE = MAP_HEIGHT - 300;
         
         let cameraY = 0;
         let cameraZoom = 1; 
-        
-        let isGravityReversed = false;
-        let gravityTimer = 0;
-        const GRAVITY_DURATION = 150; 
-        // 속도감을 위해 기본 중력 약간 상향
-        const BASE_GRAVITY = 2.0; 
+        const BASE_GRAVITY = 1.8; 
         
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d', { alpha: false });
@@ -215,7 +191,6 @@
             runner = Runner.create({ isFixed: true, delta: 1000 / 60 });
             Runner.run(runner, engine);
 
-            Events.on(engine, 'collisionActive', handleActiveCollisions);
             Events.on(engine, 'beforeUpdate', updateLogic); 
 
             requestAnimationFrame(render);
@@ -224,83 +199,60 @@
         function handleResize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            cameraZoom = Math.min(1.0, Math.max(0.35, window.innerWidth / (MAP_WIDTH + 200)));
+            // 카메라를 더 멀리서 잡도록 넓은 뷰포트 설정
+            cameraZoom = Math.min(0.8, Math.max(0.3, window.innerWidth / (MAP_WIDTH + 600)));
         }
 
         function buildMap() {
             Composite.clear(world);
             Engine.clear(engine);
-            marbles = []; finishedMarbles = []; particles = []; sweepers = []; mines = []; luckyBoxes = []; blackholes = [];
-            gravitySwitch = null; cameraY = 0; isGravityReversed = false; world.gravity.y = BASE_GRAVITY;
-            document.getElementById('gravity-warning').style.display = 'none';
+            marbles = []; finishedMarbles = []; particles = []; skillRings = [];
+            cameraY = 0; world.gravity.y = BASE_GRAVITY;
+            
             document.getElementById('leaderboard').style.display = 'none';
             document.getElementById('result-modal').style.display = 'none';
 
-            const wallOpts = { isStatic: true, label: 'wall', friction: 0, restitution: 0.5 };
+            const wallOpts = { isStatic: true, label: 'wall', friction: 0, restitution: 0.6 };
             let elements = [
                 Bodies.rectangle(-50, MAP_HEIGHT/2, 100, MAP_HEIGHT + 1000, wallOpts),
                 Bodies.rectangle(MAP_WIDTH + 50, MAP_HEIGHT/2, 100, MAP_HEIGHT + 1000, wallOpts),
                 Bodies.rectangle(MAP_WIDTH/2, MAP_HEIGHT + 100, MAP_WIDTH, 200, wallOpts)
             ];
 
-            // 난잡하지 않게 벽 간격 넓힘
-            for(let y = 800; y < MAP_HEIGHT - 1000; y += 900) {
-                elements.push(Bodies.rectangle(50, y, 300, 40, { isStatic: true, angle: Math.PI/6, friction: 0, restitution: 0.7, label: 'wall', chamfer: {radius: 15} }));
-                elements.push(Bodies.rectangle(MAP_WIDTH - 50, y + 400, 300, 40, { isStatic: true, angle: -Math.PI/6, friction: 0, restitution: 0.7, label: 'wall', chamfer: {radius: 15} }));
-            }
-
+            // 자연스럽게 겹치고 튕기는 맵 구조 (경사로 + 핀 밭)
             let currentY = 400;
-            // 막대 개수 조절
-            for (let i = 0; i < 4; i++) {
+            
+            while (currentY < MAP_HEIGHT - 1200) {
+                // 부드러운 경사로 추가
                 let isLeft = Math.random() > 0.5;
-                let width = 400 + Math.random() * 400;
-                let x = (MAP_WIDTH / 2) + (isLeft ? -200 : 200) + ((Math.random() * 200) * (isLeft ? -1 : 1));
-                let angle = (0.15 + Math.random() * 0.2) * (isLeft ? 1 : -1);
-                elements.push(Bodies.rectangle(x, currentY, width, 40, { isStatic: true, angle: angle, friction: 0, restitution: 0.3, label: 'wall', chamfer: { radius: 20 } }));
-                if (Math.random() > 0.5) mines.push(Bodies.circle(isLeft ? x + width/2 - 40 : x - width/2 + 40, currentY - 30, 20, { isStatic: true, isSensor: true, label: 'mine' }));
-                currentY += 400 + Math.random() * 200; 
-            }
-
-            let seesawY = currentY + 300;
-            for(let i = 0; i < 2; i++) {
-                let x = MAP_WIDTH/2 + (Math.random() * 400 - 200); let width = 500;
-                let seesaw = Bodies.rectangle(x, seesawY, width, 40, { friction: 0, restitution: 0.2, label: 'seesaw', chamfer: { radius: 20 }});
-                elements.push(seesaw, Constraint.create({ pointA: {x: x, y: seesawY}, bodyB: seesaw, length: 0, stiffness: 0.9, render: { visible: false } }));
-                elements.push(Bodies.circle(x - width/2 + 20, seesawY - 50, 15, { isStatic: true, label: 'pin' }), Bodies.circle(x + width/2 - 20, seesawY - 50, 15, { isStatic: true, label: 'pin' }));
-                if (Math.random() > 0.3) luckyBoxes.push(Bodies.rectangle(x + (Math.random() * (width/2) - width/4), seesawY - 60, 50, 50, { isStatic: true, isSensor: true, label: 'lucky_box', chamfer: {radius: 8} }));
-                seesawY += 500;
-            }
-
-            let sweeperY = seesawY + 300;
-            while(sweeperY < MAP_HEIGHT - 3500) {
-                let sweeper = Bodies.rectangle(MAP_WIDTH/2, sweeperY, 400, 40, { isStatic: true, friction: 0, restitution: 0.8, label: 'wall', chamfer: { radius: 20 } });
-                elements.push(sweeper);
-                sweepers.push({ body: sweeper, startX: MAP_WIDTH/2, range: 400, angle: Math.random() * Math.PI, speed: 0.04 });
-                sweeperY += 600;
-            }
-
-            // 블랙홀은 1개 또는 2개로 축소
-            for(let i=0; i<1; i++) {
-                let bhX = MAP_WIDTH/2 + (Math.random() * 400 - 200); let bhY = MAP_HEIGHT - 2800; let radius = 500;
-                elements.push(Bodies.circle(bhX, bhY, radius, { isStatic: true, isSensor: true, label: 'blackhole_sensor' }), Bodies.circle(bhX, bhY, radius * 0.1, { isStatic: true, restitution: 0.8, friction: 0, label: 'blackhole_core' }));
-                blackholes.push({ x: bhX, y: bhY, radius: radius, power: 0.005, rotation: 0 });
-            }
-
-            gravitySwitch = Bodies.rectangle(MAP_WIDTH/2, MAP_HEIGHT - 1800, MAP_WIDTH, 60, { isStatic: true, isSensor: true, label: 'gravity_switch' });
-            elements.push(gravitySwitch);
-
-            // 핀 필드 구간
-            for (let y = MAP_HEIGHT - 1600; y < MAP_HEIGHT - 800; y += 200) {
-                for (let x = 100; x < MAP_WIDTH - 50; x += 220 + Math.random() * 60) {
-                    elements.push(Bodies.circle(x + Math.random() * 80, y, 18, { isStatic: true, restitution: 0.6, label: 'pin' }));
+                let width = 600 + Math.random() * 400;
+                let x = (MAP_WIDTH / 2) + (isLeft ? -300 : 300);
+                let angle = (0.1 + Math.random() * 0.15) * (isLeft ? 1 : -1);
+                
+                elements.push(Bodies.rectangle(x, currentY, width, 40, { 
+                    isStatic: true, angle: angle, friction: 0, restitution: 0.5, label: 'wall', chamfer: { radius: 20 } 
+                }));
+                
+                // 촘촘한 핀(장애물) 구간 - 엎치락 뒤치락 유도
+                let pinStartY = currentY + 300;
+                for (let py = pinStartY; py < pinStartY + 400; py += 150) {
+                    let offset = Math.random() * 50;
+                    for (let px = 150; px < MAP_WIDTH - 100; px += 200 + Math.random() * 50) {
+                        elements.push(Bodies.circle(px + offset, py, 16, { 
+                            isStatic: true, restitution: 0.8, friction: 0, label: 'pin' 
+                        }));
+                    }
                 }
+                
+                currentY += 900;
             }
 
+            // 하단 피니쉬 라인 가이드 (골인 칸막이)
             for (let i = 1; i < 10; i++) {
-                elements.push(Bodies.rectangle(i * (MAP_WIDTH / 10), MAP_HEIGHT - 300, 20, 600, { isStatic: true, restitution: 0.5, label: 'wall' }));
+                elements.push(Bodies.rectangle(i * (MAP_WIDTH / 10), MAP_HEIGHT - 200, 20, 600, { isStatic: true, restitution: 0.5, label: 'wall' }));
             }
 
-            Composite.add(world, [...elements, ...mines, ...luckyBoxes]);
+            Composite.add(world, elements);
         }
 
         function startRace() {
@@ -312,10 +264,14 @@
             document.getElementById('leaderboard').style.display = 'block';
 
             playersData.forEach((name, i) => {
-                const marble = Bodies.circle((MAP_WIDTH / 2) + (Math.random() * 400 - 200), -200 - (i * 120), 24, { 
-                    restitution: 0.55, friction: 0.001, frictionAir: 0.012, density: 0.08, 
+                const marble = Bodies.circle((MAP_WIDTH / 2) + (Math.random() * 600 - 300), -200 - (i * 80), 24, { 
+                    restitution: 0.7, friction: 0.001, frictionAir: 0.012, density: 0.08, 
                     label: 'marble',
-                    plugin: { name: name, color: colors[i % colors.length], trail: [], finished: false, stopped: false, rank: 0, currentRank: 0, stuckTimer: 0, effect: 'none', effectTimer: 0 }
+                    plugin: { 
+                        name: name, color: colors[i % colors.length], trail: [], 
+                        finished: false, stopped: false, rank: 0, 
+                        skillTimer: Math.floor(Math.random() * 180) // 스킬 타이머 시작점 다르게
+                    }
                 });
                 Body.setVelocity(marble, { x: (Math.random() - 0.5) * 10, y: 5 });
                 marbles.push(marble);
@@ -323,29 +279,56 @@
             });
         }
 
-        function triggerMine(mineBody, marble) { Body.setPosition(mineBody, { x: -1000, y: -1000 }); createParticles(mineBody.position.x, mineBody.position.y, '#ff0055', 40); marbles.forEach(m => { if(!m.plugin.finished) Body.applyForce(m, m.position, {x:(m.position.x-mineBody.position.x)*0.002, y:(m.position.y-mineBody.position.y)*0.002 - 0.1}); }); }
-        function triggerLuckyBox(boxBody, marble) { Body.setPosition(boxBody, { x: -1000, y: -1000 }); const effect = ['giant', 'mini', 'freeze'][Math.floor(Math.random() * 3)]; marble.plugin.effect = effect; if(effect === 'giant') { marble.plugin.effectTimer=300; Body.scale(marble, 2.5, 2.5); } else if(effect==='mini') { marble.plugin.effectTimer=300; Body.scale(marble, 0.5, 0.5); } else { marble.plugin.effectTimer=100; marble.plugin.savedVelocity={...marble.velocity}; Body.setStatic(marble, true); } }
-        function triggerGravitySwitch() { if(isGravityReversed) return; isGravityReversed=true; gravityTimer=GRAVITY_DURATION; world.gravity.y=-BASE_GRAVITY; document.getElementById('gravity-warning').style.display='block'; }
+        function triggerSkill(marble, isPull) {
+            const radius = 350;
+            const forceMag = 0.04;
+            
+            // 시각 효과 등록
+            skillRings.push({ x: marble.position.x, y: marble.position.y, radius: 0, maxRadius: radius, color: isPull ? '#0088ff' : '#ff0055', isPull: isPull });
+            createParticles(marble.position.x, marble.position.y, isPull ? '#0088ff' : '#ff0055', 20, 10);
 
-        // --- 3. 가볍고 통쾌한 폭발 연출 추가 ---
+            // 주변 구슬에 물리력 행사
+            marbles.forEach(other => {
+                if (other === marble || other.plugin.finished) return;
+                
+                let dx = other.position.x - marble.position.x;
+                let dy = other.position.y - marble.position.y;
+                let distSq = dx*dx + dy*dy;
+                
+                if (distSq < radius * radius && distSq > 100) {
+                    let dist = Math.sqrt(distSq);
+                    let dirX = dx / dist;
+                    let dirY = dy / dist;
+                    let appliedForce = forceMag * other.mass * (1 - dist/radius);
+                    
+                    if (isPull) {
+                        Body.applyForce(other, other.position, { x: -dirX * appliedForce, y: -dirY * appliedForce });
+                    } else {
+                        Body.applyForce(other, other.position, { x: dirX * appliedForce, y: dirY * appliedForce - 0.05 });
+                    }
+                }
+            });
+        }
+
         function showResultScreen() {
-            const numLosers = parseInt(document.getElementById('penalty-slider').value);
+            const numLosers = Math.floor(playersData.length / 4);
             const losersList = document.getElementById('losers-list');
             losersList.innerHTML = '';
             
-            const losers = finishedMarbles.slice(-numLosers);
-            
-            // 시각적 폭발 효과 (가벼운 파티클 처리)
-            losers.forEach(loser => {
-                // 파티클 크게 생성
-                createParticles(loser.position.x, loser.position.y, '#ff0055', 80, 25);
-                // 구슬 치우기 (화면 밖으로)
-                Body.setPosition(loser, {x: -2000, y: -2000});
-            });
+            if (numLosers === 0) {
+                losersList.innerHTML = `<div class="text-white text-lg">인원수가 적어 당첨자가 없습니다! 🕊️</div>`;
+            } else {
+                const losers = finishedMarbles.slice(-numLosers);
+                
+                losers.forEach(loser => {
+                    createParticles(loser.position.x, loser.position.y, '#ff0055', 80, 25);
+                    Body.setPosition(loser, {x: -2000, y: -2000}); // 퇴장 처리
+                });
 
-            losers.reverse().forEach(loser => { 
-                losersList.innerHTML += `<div class="loser-name">${loser.plugin.name} <span class="text-sm font-normal text-white opacity-70">(${loser.plugin.rank}등)</span></div>`;
-            });
+                losers.reverse().forEach(loser => { 
+                    losersList.innerHTML += `<div class="loser-name">${loser.plugin.name} <span class="text-sm font-normal text-white opacity-70">(${loser.plugin.rank}등)</span></div>`;
+                });
+            }
             document.getElementById('result-modal').style.display = 'flex';
         }
 
@@ -357,88 +340,120 @@
         }
 
         function updateLogic() {
-            sweepers.forEach(s => { s.angle += s.speed; Body.setPosition(s.body, { x: s.startX + Math.sin(s.angle) * s.range, y: s.body.position.y }); });
-            blackholes.forEach(bh => { bh.rotation += 0.08; marbles.forEach(m => { if(m.plugin.finished) return; let dx=bh.x-m.position.x, dy=bh.y-m.position.y, distSq=dx*dx+dy*dy; if(distSq < bh.radius*bh.radius) { let dist=Math.sqrt(distSq); if(dist>15) Body.applyForce(m, m.position, {x:(dx/dist*1.5 + dy/dist*0.8)*bh.power*m.mass*(1-dist/bh.radius), y:(dy/dist*1.5 - dx/dist*0.8)*bh.power*m.mass}); } }); });
-
-            if (isGravityReversed) { gravityTimer--; if (gravityTimer<=0) { isGravityReversed=false; world.gravity.y=BASE_GRAVITY; document.getElementById('gravity-warning').style.display='none'; } else document.getElementById('gravity-warning').style.opacity = gravityTimer%10<5?1:0.5; }
-
             marbles.forEach(m => {
                 if (m.plugin.finished) return;
-                if (m.plugin.effect!=='freeze' && Math.abs(m.velocity.y)<0.5) m.plugin.stuckTimer++; else m.plugin.stuckTimer=0;
-                if (m.plugin.stuckTimer>40) { Body.applyForce(m, m.position, {x:(Math.random()-0.5)*0.2*m.mass, y:(isGravityReversed?0.25:-0.25)*m.mass}); m.plugin.stuckTimer=0; }
-                if (m.plugin.effect!=='none') { m.plugin.effectTimer--; if(m.plugin.effectTimer<=0) { if(m.plugin.effect==='giant') Body.scale(m, 1/2.5, 1/2.5); else if(m.plugin.effect==='mini') Body.scale(m, 2, 2); else Body.setStatic(m, false); m.plugin.effect='none'; } }
+
+                // 멈춤 방지용 약간의 힘
+                if (Math.abs(m.velocity.y) < 0.5 && Math.abs(m.velocity.x) < 0.5) {
+                    Body.applyForce(m, m.position, { x: (Math.random() - 0.5) * 0.05 * m.mass, y: 0.05 * m.mass });
+                }
+
+                // 스킬 발동 로직 (약 3초마다 판정)
+                m.plugin.skillTimer++;
+                if (m.plugin.skillTimer >= 180) {
+                    m.plugin.skillTimer = 0;
+                    if (Math.random() < 0.10) { // 10% 확률
+                        const isPull = Math.random() < 0.5;
+                        triggerSkill(m, isPull);
+                    }
+                }
             });
         }
 
-        function handleActiveCollisions(event) {
-            event.pairs.forEach(pair => {
-                let m = pair.bodyA.label==='marble'?pair.bodyA:(pair.bodyB.label==='marble'?pair.bodyB:null);
-                let s = pair.bodyA.isSensor?pair.bodyA:(pair.bodyB.isSensor?pair.bodyB:null);
-                if(m && s) { if(s.label==='mine') triggerMine(s, m); else if(s.label==='lucky_box'&&m.plugin.effect==='none') triggerLuckyBox(s, m); else if(s.label==='gravity_switch') triggerGravitySwitch(); }
-            });
+        function createParticles(x, y, color, count, speed=15) { 
+            for(let i=0; i<count; i++) particles.push({ x: x, y: y, vx: (Math.random()-0.5)*speed, vy: (Math.random()-0.5)*speed, life: 1.0, color: color }); 
         }
-
-        function createParticles(x, y, color, count, speed=15) { for(let i=0; i<count; i++) particles.push({ x: x, y: y, vx: (Math.random()-0.5)*speed, vy: (Math.random()-0.5)*speed, life: 1.0, color: color }); }
 
         function render() {
             frameCounter++;
             
             let bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            bgGradient.addColorStop(0, isGravityReversed ? '#200000' : '#04040a');
-            bgGradient.addColorStop(1, isGravityReversed ? '#400000' : '#0a0a18');
+            bgGradient.addColorStop(0, '#04040a');
+            bgGradient.addColorStop(1, '#0a0a18');
             ctx.fillStyle = bgGradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            let leaderY = 0; marbles.forEach(m => { if (!m.plugin.finished && m.position.y > leaderY) leaderY = m.position.y; });
+            // 카메라 위치 보정 (더 넓게 보기 위해 Y축 보정량 조절)
+            let leaderY = 0; 
+            marbles.forEach(m => { if (!m.plugin.finished && m.position.y > leaderY) leaderY = m.position.y; });
             if (leaderY === 0 && finishedMarbles.length > 0) leaderY = MAP_HEIGHT; 
+            
             let viewHeightInWorld = canvas.height / cameraZoom;
-            let targetCameraY = Math.max(cameraY, leaderY - (viewHeightInWorld * 0.6)); 
+            let targetCameraY = Math.max(cameraY, leaderY - (viewHeightInWorld * 0.5)); 
             if (targetCameraY > MAP_HEIGHT - viewHeightInWorld + 200) targetCameraY = MAP_HEIGHT - viewHeightInWorld + 200;
-            cameraY += (targetCameraY - cameraY) * 0.05; 
+            cameraY += (targetCameraY - cameraY) * 0.06; 
 
+            // 배경 그리드
             ctx.strokeStyle = 'rgba(0, 255, 255, 0.03)';
             ctx.lineWidth = 1;
             let gridY = (cameraY * cameraZoom) % 80;
             for(let i = 0; i < canvas.height + 80; i += 80) { ctx.beginPath(); ctx.moveTo(0, i - gridY); ctx.lineTo(canvas.width, i - gridY); ctx.stroke(); }
             for(let i = 0; i < canvas.width; i += 80) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke(); }
 
-            const viewTop = cameraY - 200, viewBottom = cameraY + viewHeightInWorld + 200;
+            const viewTop = cameraY - 300, viewBottom = cameraY + viewHeightInWorld + 300;
 
             ctx.save();
-            ctx.translate(canvas.width / 2, 0); ctx.scale(cameraZoom, cameraZoom); ctx.translate(-MAP_WIDTH / 2, -cameraY);
+            ctx.translate(canvas.width / 2, 0); 
+            ctx.scale(cameraZoom, cameraZoom); 
+            ctx.translate(-MAP_WIDTH / 2, -cameraY);
 
+            // 벽 렌더링
             ctx.fillStyle = 'rgba(0, 220, 255, 0.1)'; ctx.strokeStyle = 'rgba(0, 220, 255, 0.5)'; ctx.lineWidth = 2;
             ctx.beginPath();
             world.bodies.forEach(b => {
-                if(b.bounds.max.y < viewTop || b.bounds.min.y > viewBottom || b.label==='marble' || b.isSensor || b.label==='pin') return;
+                if(b.bounds.max.y < viewTop || b.bounds.min.y > viewBottom || b.label==='marble' || b.label==='pin') return;
                 b.parts.forEach((p, i) => { if(i===0 && b.parts.length>1) return; ctx.moveTo(p.vertices[0].x, p.vertices[0].y); for(let j=1;j<p.vertices.length;j++) ctx.lineTo(p.vertices[j].x, p.vertices[j].y); ctx.lineTo(p.vertices[0].x, p.vertices[0].y); });
             });
             ctx.fill(); ctx.stroke();
 
-            ctx.fillStyle = 'rgba(255, 255, 0, 0.4)'; ctx.beginPath();
-            world.bodies.forEach(b => { if(b.label==='pin' && b.position.y > viewTop && b.position.y < viewBottom) { ctx.moveTo(b.position.x+b.circleRadius, b.position.y); ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, 2*Math.PI); }});
+            // 핀 렌더링
+            ctx.fillStyle = 'rgba(255, 255, 0, 0.3)'; ctx.beginPath();
+            world.bodies.forEach(b => { 
+                if(b.label==='pin' && b.position.y > viewTop && b.position.y < viewBottom) { 
+                    ctx.moveTo(b.position.x+b.circleRadius, b.position.y); 
+                    ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, 2*Math.PI); 
+                }
+            });
             ctx.fill();
 
-            world.bodies.forEach(b => {
-                if(b.bounds.max.y < viewTop || b.bounds.min.y > viewBottom) return;
-                if(b.label==='lucky_box') { ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.strokeRect(b.bounds.min.x, b.bounds.min.y, 50, 50); ctx.fillRect(b.bounds.min.x, b.bounds.min.y, 50, 50); ctx.fillStyle='#fff'; ctx.font='bold 24px Arial'; ctx.textAlign='center'; ctx.fillText('?', b.position.x, b.position.y+8); }
-                else if(b.label==='mine') { ctx.fillStyle='rgba(255,0,0,0.3)'; ctx.strokeStyle='#ff0000'; ctx.beginPath(); ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, 2*Math.PI); ctx.fill(); ctx.stroke(); ctx.fillStyle='#fff'; ctx.font='bold 16px Arial'; ctx.fillText('❌', b.position.x, b.position.y+6); }
-                else if(b.label==='gravity_switch') { ctx.fillStyle='rgba(255,0,85,0.2)'; ctx.fillRect(b.bounds.min.x, b.bounds.min.y, MAP_WIDTH, 60); ctx.fillStyle='#ff0055'; ctx.font='bold 30px "Malgun Gothic"'; ctx.fillText('⚠️ GRAVITY SWITCH ⚠️', MAP_WIDTH/2, b.position.y+10); }
-            });
-
+            // 결승선
             if (FINISH_LINE > viewTop && FINISH_LINE < viewBottom) {
-                ctx.beginPath(); ctx.moveTo(0, FINISH_LINE); ctx.lineTo(MAP_WIDTH, FINISH_LINE); ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 6; ctx.setLineDash([20, 15]); ctx.stroke(); ctx.setLineDash([]);
+                ctx.beginPath(); ctx.moveTo(0, FINISH_LINE); ctx.lineTo(MAP_WIDTH, FINISH_LINE); 
+                ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 6; ctx.setLineDash([20, 15]); ctx.stroke(); ctx.setLineDash([]);
             }
 
+            // 스킬 링 효과 렌더링
+            for (let i = skillRings.length - 1; i >= 0; i--) {
+                let ring = skillRings[i];
+                ring.radius += 15;
+                let alpha = 1 - (ring.radius / ring.maxRadius);
+                
+                if (alpha <= 0) {
+                    skillRings.splice(i, 1);
+                    continue;
+                }
+                
+                ctx.beginPath();
+                ctx.arc(ring.x, ring.y, ring.radius, 0, 2 * Math.PI);
+                ctx.lineWidth = ring.isPull ? 3 : 8;
+                ctx.strokeStyle = `${ring.color}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}`;
+                ctx.stroke();
+            }
+
+            // 파티클
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03;
                 if (p.life <= 0) { particles.splice(i, 1); continue; }
-                if (p.y >= viewTop - 500 && p.y <= viewBottom + 500) { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI*2); ctx.fill(); }
+                if (p.y >= viewTop && p.y <= viewBottom) { 
+                    ctx.globalAlpha = p.life; ctx.fillStyle = p.color; 
+                    ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI*2); ctx.fill(); 
+                }
             }
             ctx.globalAlpha = 1.0;
 
             if (frameCounter % 15 === 0) updateLeaderboard();
 
+            // 구슬 렌더링
             marbles.forEach(m => {
                 let p = m.plugin;
                 if (!p.finished && m.position.y > FINISH_LINE) {
@@ -448,7 +463,7 @@
                     if(finishedMarbles.length === marbles.length) setTimeout(showResultScreen, 1500);
                 }
 
-                if (p.effect !== 'freeze' && !p.stopped) { p.trail.push({x: m.position.x, y: m.position.y}); if (p.trail.length > 15) p.trail.shift(); }
+                if (!p.stopped) { p.trail.push({x: m.position.x, y: m.position.y}); if (p.trail.length > 15) p.trail.shift(); }
 
                 if (p.trail.length > 1 && m.position.y >= viewTop && m.position.y <= viewBottom) {
                     ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = m.circleRadius * 1.5; ctx.strokeStyle = p.color;
@@ -461,13 +476,13 @@
                     ctx.fillStyle = p.color; ctx.globalAlpha = 0.3; ctx.fill(); ctx.globalAlpha = 1.0;
 
                     ctx.beginPath(); ctx.arc(m.position.x, m.position.y, m.circleRadius, 0, 2*Math.PI);
-                    ctx.fillStyle = p.effect==='freeze' ? '#ccffff' : '#fff'; ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.fill();
                     ctx.strokeStyle = p.color; ctx.lineWidth = 4; ctx.stroke(); 
 
-                    let fontSize = p.effect==='giant'?28:(p.effect==='mini'?14:20);
+                    let fontSize = 20;
                     ctx.font = `bold ${fontSize}px "Pretendard", sans-serif`;
                     const badgeWidth = ctx.measureText(p.name).width + 16;
-                    const badgeY = m.position.y - m.circleRadius - (p.effect==='giant'?40:25);
+                    const badgeY = m.position.y - m.circleRadius - 25;
 
                     ctx.fillStyle = 'rgba(0, 0, 0, 0.75)'; ctx.beginPath(); ctx.roundRect(m.position.x - badgeWidth/2, badgeY, badgeWidth, fontSize+10, 8); ctx.fill(); 
                     ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke();
@@ -495,7 +510,6 @@
             });
 
             document.getElementById('rank-list').innerHTML = sorted.map((m, idx) => {
-                m.plugin.currentRank = idx + 1;
                 let css = 'rank-item' + (idx<3 ? ` rank-${idx+1}` : '');
                 let status = m.plugin.finished ? '🏁 도착' : Math.floor((m.position.y / FINISH_LINE) * 100) + '%';
                 return `<div class="${css}">
@@ -510,7 +524,12 @@
         }
 
         document.getElementById('start-btn').addEventListener('click', startRace);
-        document.getElementById('reset-btn').addEventListener('click', () => { buildMap(); document.getElementById('ui-panel').style.transform = 'translateY(0) scale(1)'; document.getElementById('ui-panel').style.opacity = '1'; document.getElementById('leaderboard').style.display = 'none'; });
+        document.getElementById('reset-btn').addEventListener('click', () => { 
+            buildMap(); 
+            document.getElementById('ui-panel').style.transform = 'translateY(0) scale(1)'; 
+            document.getElementById('ui-panel').style.opacity = '1'; 
+            document.getElementById('leaderboard').style.display = 'none'; 
+        });
 
         init();
     </script>
