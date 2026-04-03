@@ -47,12 +47,6 @@
         .rank-1 { background: linear-gradient(90deg, rgba(255,215,0,0.15), transparent); border-left: 4px solid gold; transform: scale(1.02); }
         .rank-2 { background: linear-gradient(90deg, rgba(192,192,192,0.1), transparent); border-left: 4px solid silver; }
         .rank-3 { background: linear-gradient(90deg, rgba(205,127,50,0.1), transparent); border-left: 4px solid #cd7f32; }
-
-        /* 출발 카운트다운 오버레이 */
-        #countdown-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 40; display: flex; justify-content: center; align-items: center; }
-        .count-text { font-size: 15rem; font-weight: 900; color: #fff; text-shadow: 0 0 30px #00f0ff, 0 0 60px #00f0ff; opacity: 0; transform: scale(0.5); transition: 0.3s; }
-        .count-active { opacity: 1; transform: scale(1); animation: pulseCount 0.8s infinite; }
-        @keyframes pulseCount { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -88,8 +82,6 @@
         </h2>
         <div id="rank-list"></div>
     </div>
-
-    <div id="countdown-overlay"><div id="count-display" class="count-text">3</div></div>
 
     <div id="result-modal">
         <div class="result-box">
@@ -149,7 +141,6 @@
 
         let engine, runner, world;
         let marbles = [], particles = [], finishedMarbles = [], skillRings = [], dynamicObstacles = [];
-        let startGate; // 출발선 게이트
         
         const MAP_WIDTH = 1600;
         let MAP_HEIGHT = 7500; 
@@ -158,7 +149,6 @@
         const BASE_GRAVITY = 1.8; 
         
         let isDragging = false, previousMouseY = 0, lastInteractionTime = Date.now();
-        let raceState = 'idle'; // idle, countdown, racing
 
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d', { alpha: false });
@@ -218,8 +208,9 @@
         function buildMap() {
             Composite.clear(world); Engine.clear(engine);
             marbles = []; finishedMarbles = []; particles = []; skillRings = []; dynamicObstacles = [];
-            cameraY = -300; world.gravity.y = BASE_GRAVITY; raceState = 'idle';
+            cameraY = -300; world.gravity.y = BASE_GRAVITY;
             document.getElementById('live-status').innerText = '대기중';
+            document.getElementById('live-status').style.backgroundColor = '#0088ff';
             
             MAP_HEIGHT = Math.max(5000, 3000 + (playersData.length * 700));
             FINISH_LINE = MAP_HEIGHT - 300;
@@ -234,30 +225,26 @@
                 Bodies.rectangle(MAP_WIDTH/2, MAP_HEIGHT + 100, MAP_WIDTH, 200, wallOpts)
             ];
 
-            // 동시 출발을 위한 시작 게이트 (y: 200)
-            startGate = Bodies.rectangle(MAP_WIDTH/2, 250, MAP_WIDTH, 40, { isStatic: true, label: 'gate', restitution: 0.1 });
-            elements.push(startGate);
-
-            let currentY = 700;
+            let currentY = 400;
             
-            // 맵 난이도 및 구조 다변화 (긴장감 상승)
+            // 맵 난이도 및 구조 다변화
             while (currentY < MAP_HEIGHT - 1200) {
                 let rand = Math.random();
                 
                 if (rand < 0.25) {
-                    // 1. 네온 핀볼 범퍼 구간 (Bumper Field)
+                    // 1. 네온 핀볼 범퍼 구간
                     for (let py = currentY; py < currentY + 500; py += 160) {
                         let offset = Math.random() * 80;
                         for (let px = 200; px < MAP_WIDTH - 150; px += 250 + Math.random() * 100) {
                             elements.push(Bodies.circle(px + offset, py, 35, { 
-                                isStatic: true, restitution: 1.6, friction: 0, label: 'bumper' // 높은 탄성력
+                                isStatic: true, restitution: 1.6, friction: 0, label: 'bumper'
                             }));
                         }
                     }
                     currentY += 700;
                     
                 } else if (rand < 0.5) {
-                    // 2. 고속 십자형 스피너 (Cross Spinners)
+                    // 2. 고속 십자형 스피너
                     let xOff = MAP_WIDTH/2 + (Math.random() > 0.5 ? 200 : -200);
                     let p1 = Bodies.rectangle(xOff, currentY + 200, 400, 40);
                     let p2 = Bodies.rectangle(xOff, currentY + 200, 40, 400);
@@ -267,14 +254,13 @@
                     });
                     elements.push(cross); dynamicObstacles.push(cross);
                     
-                    // 좁은 깔때기로 십자 스피너로 유도
                     elements.push(Bodies.rectangle(200, currentY, 600, 40, { isStatic: true, angle: 0.4, label: 'wall' }));
                     elements.push(Bodies.rectangle(1400, currentY, 600, 40, { isStatic: true, angle: -0.4, label: 'wall' }));
                     
                     currentY += 600;
                     
                 } else if (rand < 0.75) {
-                    // 3. 앞뒤로 스윙하는 거대 플리퍼 (Swatters)
+                    // 3. 앞뒤로 스윙하는 플리퍼
                     let flipperLeft = Bodies.rectangle(200, currentY, 600, 40, { 
                         isStatic: true, restitution: 0.8, chamfer: {radius: 20},
                         plugin: { type: 'oscillator', startX: 200, startY: currentY, baseAngle: 0.2, range: 0.5, speed: 0.06 } 
@@ -287,7 +273,7 @@
                     currentY += 500;
                     
                 } else {
-                    // 4. 슬라이더 + 바늘구멍 코스 (병목 구간으로 스킬 효과 극대화)
+                    // 4. 슬라이더 + 바늘구멍 코스
                     elements.push(Bodies.rectangle(MAP_WIDTH/2 - 300, currentY, 600, 40, { isStatic: true, angle: 0.1, label: 'wall' }));
                     elements.push(Bodies.rectangle(MAP_WIDTH/2 + 300, currentY, 600, 40, { isStatic: true, angle: -0.1, label: 'wall' }));
                     
@@ -315,11 +301,12 @@
             document.getElementById('ui-panel').style.transform = isMobile ? 'translateY(-200%) scale(0.9)' : 'translateY(-150%) scale(0.9)';
             document.getElementById('ui-panel').style.opacity = '0';
             document.getElementById('leaderboard').style.display = 'block';
+            document.getElementById('live-status').innerText = '진행중';
+            document.getElementById('live-status').style.backgroundColor = '#ff0055';
 
-            // 게이트 위에 옹기종기 모여있도록 배치
             playersData.forEach((name, i) => {
-                // 초반 공기저항(frictionAir)을 크게 낮춰 빠르게 떨어지게 설정
-                const marble = Bodies.circle((MAP_WIDTH / 2) + (Math.random() * 800 - 400), 50 + (Math.random() * 100), 24, { 
+                // 시작 즉시 공 생성 및 부스터 적용
+                const marble = Bodies.circle((MAP_WIDTH / 2) + (Math.random() * 800 - 400), -300 - (i * 80), 24, { 
                     restitution: 0.7, friction: 0.005, frictionAir: 0.003, density: 0.08, 
                     label: 'marble',
                     plugin: { 
@@ -328,43 +315,13 @@
                         skillTimer: Math.floor(Math.random() * 180), skillCount: 0 
                     }
                 });
+                // 초기 부스터 적용 (아래 방향)
+                Body.setVelocity(marble, { x: (Math.random() - 0.5) * 15, y: 15 });
                 marbles.push(marble);
                 Composite.add(world, marble);
             });
             
             lastInteractionTime = Date.now();
-            
-            // 카운트다운 로직
-            raceState = 'countdown';
-            let count = 3;
-            const cdDisplay = document.getElementById('count-display');
-            cdDisplay.innerText = count;
-            cdDisplay.classList.add('count-active');
-            
-            let cdInterval = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    cdDisplay.innerText = count;
-                    // 애니메이션 리트리거
-                    cdDisplay.classList.remove('count-active');
-                    void cdDisplay.offsetWidth; 
-                    cdDisplay.classList.add('count-active');
-                } else {
-                    clearInterval(cdInterval);
-                    cdDisplay.innerText = "GO!";
-                    document.getElementById('live-status').innerText = '진행중';
-                    document.getElementById('live-status').style.backgroundColor = '#ff0055';
-                    
-                    setTimeout(() => { cdDisplay.classList.remove('count-active'); }, 800);
-                    
-                    // 게이트 오픈 및 출발 부스터
-                    raceState = 'racing';
-                    Composite.remove(world, startGate);
-                    marbles.forEach(m => {
-                        Body.setVelocity(m, { x: (Math.random() - 0.5) * 15, y: 15 }); // 초기 수직 하강 부스터 부여
-                    });
-                }
-            }, 1000);
         }
 
         function triggerSkill(marble, isPull) {
@@ -418,19 +375,17 @@
         }
 
         function updateLogic() {
-            if(raceState === 'racing') {
-                marbles.forEach(m => {
-                    if (m.plugin.finished) return;
-                    m.plugin.skillTimer++;
-                    if (m.plugin.skillTimer >= 220 && m.plugin.skillCount < 3) {
-                        m.plugin.skillTimer = 0;
-                        if (Math.random() < 0.15) { 
-                            m.plugin.skillCount++;
-                            triggerSkill(m, Math.random() < 0.5);
-                        }
+            marbles.forEach(m => {
+                if (m.plugin.finished) return;
+                m.plugin.skillTimer++;
+                if (m.plugin.skillTimer >= 220 && m.plugin.skillCount < 3) {
+                    m.plugin.skillTimer = 0;
+                    if (Math.random() < 0.15) { 
+                        m.plugin.skillCount++;
+                        triggerSkill(m, Math.random() < 0.5);
                     }
-                });
-            }
+                }
+            });
 
             // 다채로운 동적 장애물 업데이트 로직
             dynamicObstacles.forEach(obs => {
@@ -440,7 +395,6 @@
                     let newX = obs.plugin.startX + Math.sin(frameCounter * obs.plugin.speed + obs.plugin.offset) * obs.plugin.range;
                     Body.setPosition(obs, { x: newX, y: obs.position.y });
                 } else if (obs.plugin.type === 'oscillator') {
-                    // 스윙하는 플리퍼 움직임
                     let currentAngle = obs.plugin.baseAngle + Math.sin(frameCounter * obs.plugin.speed) * obs.plugin.range;
                     Body.setAngle(obs, currentAngle);
                 }
@@ -463,7 +417,7 @@
             let viewHeightInWorld = canvas.height / cameraZoom;
             
             // 2초 미조작 시 꼴등 추적 로직
-            if (!isDragging && Date.now() - lastInteractionTime > 2000 && raceState === 'racing' && marbles.length > 0) {
+            if (!isDragging && Date.now() - lastInteractionTime > 2000 && marbles.length > 0) {
                 let lastPlaceY = Infinity;
                 marbles.forEach(m => { if (!m.plugin.finished && m.position.y < lastPlaceY) lastPlaceY = m.position.y; });
                 if (lastPlaceY === Infinity && finishedMarbles.length > 0) lastPlaceY = FINISH_LINE; 
@@ -493,7 +447,7 @@
             ctx.scale(cameraZoom, cameraZoom); 
             ctx.translate(-MAP_WIDTH / 2, -cameraY);
 
-            // 벽, 게이트 및 다이나믹 장애물 렌더링
+            // 벽 및 다이나믹 장애물 렌더링
             ctx.lineWidth = 2;
             world.bodies.forEach(b => {
                 if(b.bounds.max.y < viewTop || b.bounds.min.y > viewBottom || b.label==='marble' || b.label==='bumper') return;
@@ -506,9 +460,7 @@
                     ctx.lineTo(p.vertices[0].x, p.vertices[0].y); 
                 });
                 
-                if (b.label === 'gate') {
-                    ctx.fillStyle = 'rgba(255, 255, 0, 0.3)'; ctx.strokeStyle = '#ffff00';
-                } else if (b.plugin && b.plugin.type) {
+                if (b.plugin && b.plugin.type) {
                     ctx.fillStyle = 'rgba(255, 50, 150, 0.2)'; ctx.strokeStyle = 'rgba(255, 50, 150, 0.6)';
                 } else {
                     ctx.fillStyle = 'rgba(0, 220, 255, 0.1)'; ctx.strokeStyle = 'rgba(0, 220, 255, 0.5)';
@@ -556,7 +508,7 @@
             }
             ctx.globalAlpha = 1.0;
 
-            if (frameCounter % 15 === 0 && raceState === 'racing') updateLeaderboard();
+            if (frameCounter % 15 === 0 && marbles.length > 0) updateLeaderboard();
 
             marbles.forEach(m => {
                 let p = m.plugin;
@@ -567,7 +519,7 @@
                     if(finishedMarbles.length === marbles.length) setTimeout(showResultScreen, 1500);
                 }
 
-                if (!p.stopped && raceState === 'racing') { p.trail.push({x: m.position.x, y: m.position.y}); if (p.trail.length > 15) p.trail.shift(); }
+                if (!p.stopped) { p.trail.push({x: m.position.x, y: m.position.y}); if (p.trail.length > 15) p.trail.shift(); }
 
                 if (p.trail.length > 1 && m.position.y >= viewTop && m.position.y <= viewBottom) {
                     ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = m.circleRadius * 1.5; ctx.strokeStyle = p.color;
@@ -583,7 +535,7 @@
                     ctx.fillStyle = '#fff'; ctx.fill();
                     ctx.strokeStyle = p.color; ctx.lineWidth = 4; ctx.stroke(); 
 
-                    if (p.finished || raceState === 'idle' || raceState === 'countdown') {
+                    if (p.finished) {
                         let fontSize = 20;
                         ctx.font = `bold ${fontSize}px "Pretendard", sans-serif`;
                         const badgeWidth = ctx.measureText(p.name).width + 16;
@@ -595,11 +547,9 @@
                         ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                         ctx.fillText(p.name, m.position.x, badgeY + (fontSize+10)/2);
                         
-                        if (p.finished) {
-                            ctx.font = '900 32px "Pretendard"';
-                            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(m.position.x - 35, m.position.y - m.circleRadius - 90, 70, 40);
-                            ctx.fillStyle = 'gold'; ctx.fillText(p.rank+'등', m.position.x, m.position.y - m.circleRadius - 70);
-                        }
+                        ctx.font = '900 32px "Pretendard"';
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(m.position.x - 35, m.position.y - m.circleRadius - 90, 70, 40);
+                        ctx.fillStyle = 'gold'; ctx.fillText(p.rank+'등', m.position.x, m.position.y - m.circleRadius - 70);
                     }
                 }
             });
