@@ -70,8 +70,9 @@
         <button id="reset-btn" class="btn-neon btn-reset">⟳ 코스 무작위 재배치</button>
 
         <div class="mt-4 p-3 bg-gray-900/60 rounded-xl border border-gray-800 text-gray-300 text-xs">
-            <span class="text-yellow-400 font-bold">💡 조작 안내</span><br>
-            마우스를 드래그하여 화면을 움직일 수 있습니다. (2초간 가만히 두면 꼴등을 비춰줍니다.)
+            <span class="text-yellow-400 font-bold">💡 조작 및 시스템 안내</span><br>
+            • 마우스를 드래그하여 화면을 위아래로 볼 수 있습니다.<br>
+            • <b>고무줄 효과:</b> 후미 그룹은 공기저항이 적어져 무서운 속도로 선두를 추격합니다. 끝까지 방심할 수 없습니다!
         </div>
     </div>
 
@@ -140,7 +141,7 @@
         const Engine = Matter.Engine, Runner = Matter.Runner, Bodies = Matter.Bodies, Body = Matter.Body, Composite = Matter.Composite, Events = Matter.Events;
 
         let engine, runner, world;
-        let marbles = [], particles = [], finishedMarbles = [], skillRings = [], dynamicObstacles = [];
+        let marbles = [], particles = [], finishedMarbles = [], dynamicObstacles = [];
         
         const MAP_WIDTH = 1600;
         let MAP_HEIGHT = 7500; 
@@ -205,82 +206,76 @@
 
         function buildMap() {
             Composite.clear(world); Engine.clear(engine);
-            marbles = []; finishedMarbles = []; particles = []; skillRings = []; dynamicObstacles = [];
+            marbles = []; finishedMarbles = []; particles = []; dynamicObstacles = [];
             cameraY = -300; world.gravity.y = BASE_GRAVITY;
             document.getElementById('live-status').innerText = '대기중';
             document.getElementById('live-status').style.backgroundColor = '#0088ff';
             
-            MAP_HEIGHT = Math.max(5000, 3000 + (playersData.length * 750));
+            MAP_HEIGHT = Math.max(6000, 3000 + (playersData.length * 800));
             FINISH_LINE = MAP_HEIGHT - 300;
 
             document.getElementById('leaderboard').style.display = 'none';
             document.getElementById('result-modal').style.display = 'none';
 
-            const wallOpts = { isStatic: true, label: 'wall', friction: 0, restitution: 0.6 };
+            // 마찰력을 0으로 설정하여 미끄러지듯 내려가게 설정
+            const wallOpts = { isStatic: true, label: 'wall', friction: 0, restitution: 0.5 };
             let elements = [
                 Bodies.rectangle(-50, MAP_HEIGHT/2, 100, MAP_HEIGHT + 1000, wallOpts),
-                Bodies.rectangle(MAP_WIDTH + 50, MAP_HEIGHT/2, 100, MAP_HEIGHT + 1000, wallOpts),
-                Bodies.rectangle(MAP_WIDTH/2, MAP_HEIGHT + 100, MAP_WIDTH, 200, wallOpts)
+                Bodies.rectangle(MAP_WIDTH + 50, MAP_HEIGHT/2, 100, MAP_HEIGHT + 1000, wallOpts)
             ];
 
+            // 갇힘 원천 차단 구조 설계 (구간별 여백 400px 이상 확보)
             let currentY = 500;
+            let isLeft = true;
             
             while (currentY < MAP_HEIGHT - 1200) {
-                let rand = Math.random();
+                let sectionType = Math.floor(Math.random() * 3);
                 
-                if (rand < 0.25) {
-                    // 1. 네온 핀볼 범퍼 구간 
+                if (sectionType === 0) {
+                    // 1. 거대 지그재그 슬라이드 (Pachinko style)
+                    // 절대 겹치지 않고 좌우로 번갈아가며 흘러가도록 설계
+                    let x = isLeft ? 300 : MAP_WIDTH - 300;
+                    let angle = isLeft ? 0.35 : -0.35; // 약 20도 경사로 확실히 굴러떨어지게 설정
+                    
+                    elements.push(Bodies.rectangle(x, currentY, 1200, 50, { 
+                        isStatic: true, angle: angle, friction: 0, restitution: 0.4, label: 'wall', chamfer: {radius: 25} 
+                    }));
+                    
+                    // 빈 공간 쪽에 튕기는 범퍼 몇 개 배치
+                    let bumperX = isLeft ? MAP_WIDTH - 300 : 300;
+                    elements.push(Bodies.circle(bumperX, currentY + 150, 40, { isStatic: true, restitution: 1.4, friction: 0, label: 'bumper' }));
+                    elements.push(Bodies.circle(bumperX + (isLeft ? 200 : -200), currentY + 250, 30, { isStatic: true, restitution: 1.4, friction: 0, label: 'bumper' }));
+                    
+                    currentY += 600;
+                    isLeft = !isLeft;
+                    
+                } else if (sectionType === 1) {
+                    // 2. 탁 트인 핀볼 밭 (여유 공간 충분)
                     for (let py = currentY; py < currentY + 400; py += 180) {
-                        let offset = Math.random() * 80;
-                        for (let px = 250; px < MAP_WIDTH - 200; px += 300 + Math.random() * 50) {
-                            elements.push(Bodies.circle(px + offset, py, 35, { 
-                                isStatic: true, restitution: 1.6, friction: 0, label: 'bumper'
+                        let offset = Math.random() * 100;
+                        for (let px = 250; px < MAP_WIDTH - 200; px += 350 + Math.random() * 50) {
+                            elements.push(Bodies.circle(px + offset, py, 25, { 
+                                isStatic: true, restitution: 1.1, friction: 0, label: 'pin'
                             }));
                         }
                     }
                     currentY += 600;
                     
-                } else if (rand < 0.5) {
-                    // 2. 십자가 완전 제거 -> 대형 좌우 왕복 바운스 볼 (원형이라 절대 끼이지 않음)
-                    let giantBall = Bodies.circle(MAP_WIDTH/2, currentY + 250, 120, { 
-                        isStatic: true, restitution: 1.5, friction: 0, label: 'giant_ball',
-                        plugin: { type: 'slider', startX: MAP_WIDTH/2, range: 450, speed: 0.05, offset: 0 } 
-                    });
-                    elements.push(giantBall); dynamicObstacles.push(giantBall);
-                    
-                    // 넉넉한 유도선 배치 (끼일 틈새 없음)
-                    elements.push(Bodies.rectangle(350, currentY + 600, 700, 40, { isStatic: true, angle: 0.4, label: 'wall', friction: 0 }));
-                    elements.push(Bodies.rectangle(1250, currentY + 750, 700, 40, { isStatic: true, angle: -0.4, label: 'wall', friction: 0 }));
-                    
-                    currentY += 950;
-                    
-                } else if (rand < 0.75) {
-                    // 3. 스윙 플리퍼
-                    let flipperLeft = Bodies.rectangle(400, currentY + 150, 500, 40, { 
-                        isStatic: true, restitution: 0.8, chamfer: {radius: 20}, friction: 0,
-                        plugin: { type: 'oscillator', startX: 400, startY: currentY + 150, baseAngle: 0.2, range: 0.5, speed: 0.06 } 
-                    });
-                    let flipperRight = Bodies.rectangle(MAP_WIDTH - 400, currentY + 350, 500, 40, { 
-                        isStatic: true, restitution: 0.8, chamfer: {radius: 20}, friction: 0,
-                        plugin: { type: 'oscillator', startX: MAP_WIDTH - 400, startY: currentY + 350, baseAngle: -0.2, range: 0.5, speed: 0.06 } 
-                    });
-                    elements.push(flipperLeft, flipperRight); dynamicObstacles.push(flipperLeft, flipperRight);
-                    currentY += 600;
-                    
                 } else {
-                    // 4. 슬라이더 
-                    elements.push(Bodies.rectangle(MAP_WIDTH/2 - 400, currentY, 600, 40, { isStatic: true, angle: 0.4, label: 'wall', friction: 0 }));
-                    elements.push(Bodies.rectangle(MAP_WIDTH/2 + 400, currentY + 250, 600, 40, { isStatic: true, angle: -0.4, label: 'wall', friction: 0 }));
-                    
-                    let slider = Bodies.rectangle(MAP_WIDTH/2, currentY + 500, 400, 30, { 
-                        isStatic: true, restitution: 0.5, chamfer: {radius: 15}, friction: 0,
-                        plugin: { type: 'slider', startX: MAP_WIDTH/2, range: 350, speed: 0.04, offset: 0 } 
+                    // 3. 거대 스피너 구역 (주변 벽 완전 제거)
+                    // 스피너 주변에 갇힐 공간을 만들 벽을 일체 두지 않음
+                    let p1 = Bodies.rectangle(MAP_WIDTH/2, currentY + 200, 600, 50);
+                    let spinner = Body.create({ 
+                        parts: [p1], isStatic: true, restitution: 0.8, friction: 0,
+                        plugin: { type: 'spinner', speed: (Math.random() > 0.5 ? 0.08 : -0.08) } 
                     });
-                    elements.push(slider); dynamicObstacles.push(slider);
+                    elements.push(spinner); dynamicObstacles.push(spinner);
+                    
                     currentY += 700;
                 }
             }
 
+            // 하단 결승선 가이드 핀
             for (let i = 1; i < 10; i++) {
                 elements.push(Bodies.rectangle(i * (MAP_WIDTH / 10), MAP_HEIGHT - 200, 20, 600, { isStatic: true, restitution: 0.5, label: 'wall', friction: 0 }));
             }
@@ -301,43 +296,19 @@
 
             playersData.forEach((name, i) => {
                 const marble = Bodies.circle((MAP_WIDTH / 2) + (Math.random() * 800 - 400), -300 - (i * 80), 24, { 
-                    restitution: 0.7, friction: 0, frictionAir: 0.005, density: 0.08, 
+                    restitution: 0.6, friction: 0, frictionAir: 0.015, density: 0.08, 
                     label: 'marble',
                     plugin: { 
                         name: name, color: colors[i % colors.length], trail: [], 
-                        finished: false, stopped: false, rank: 0, 
-                        skillTimer: Math.floor(Math.random() * 180), skillCount: 0 
+                        finished: false, stopped: false, rank: 0
                     }
                 });
-                Body.setVelocity(marble, { x: (Math.random() - 0.5) * 15, y: 12 });
+                Body.setVelocity(marble, { x: (Math.random() - 0.5) * 10, y: 10 });
                 marbles.push(marble);
                 Composite.add(world, marble);
             });
             
             lastInteractionTime = Date.now();
-        }
-
-        function triggerSkill(marble, isPull) {
-            const radius = 400;
-            const forceMag = 0.05;
-            skillRings.push({ x: marble.position.x, y: marble.position.y, radius: 0, maxRadius: radius, color: isPull ? '#0088ff' : '#ff0055', isPull: isPull });
-            createParticles(marble.position.x, marble.position.y, isPull ? '#0088ff' : '#ff0055', 20, 10);
-
-            marbles.forEach(other => {
-                if (other === marble || other.plugin.finished) return;
-                let dx = other.position.x - marble.position.x;
-                let dy = other.position.y - marble.position.y;
-                let distSq = dx*dx + dy*dy;
-                if (distSq < radius * radius && distSq > 100) {
-                    let dist = Math.sqrt(distSq);
-                    let appliedForce = forceMag * other.mass * (1 - dist/radius);
-                    if (isPull) {
-                        Body.applyForce(other, other.position, { x: -(dx/dist) * appliedForce, y: -(dy/dist) * appliedForce });
-                    } else {
-                        Body.applyForce(other, other.position, { x: (dx/dist) * appliedForce, y: (dy/dist) * appliedForce - 0.05 });
-                    }
-                }
-            });
         }
 
         function showResultScreen() {
@@ -368,27 +339,28 @@
         }
 
         function updateLogic() {
-            marbles.forEach(m => {
-                if (m.plugin.finished) return;
-
-                m.plugin.skillTimer++;
-                if (m.plugin.skillTimer >= 220 && m.plugin.skillCount < 3) {
-                    m.plugin.skillTimer = 0;
-                    if (Math.random() < 0.15) { 
-                        m.plugin.skillCount++;
-                        triggerSkill(m, Math.random() < 0.5);
-                    }
+            // [핵심 로직] 러버밴딩 (고무줄) 효과 적용 - 박진감 넘치는 1~8등 추격전 유도
+            let activeMarbles = marbles.filter(m => !m.plugin.finished);
+            if (activeMarbles.length > 1) {
+                let leaderY = Math.max(...activeMarbles.map(m => m.position.y));
+                let lastY = Math.min(...activeMarbles.map(m => m.position.y));
+                let spread = leaderY - lastY;
+                
+                if (spread > 0) {
+                    activeMarbles.forEach(m => {
+                        // relativePos: 1에 가까울수록 선두, 0에 가까울수록 후미
+                        let relativePos = (m.position.y - lastY) / spread;
+                        
+                        // 1등은 공기 저항 0.025 (떨어지는 속도 감소), 꼴등은 0.002 (빠르게 추격)
+                        m.frictionAir = 0.002 + (relativePos * 0.023); 
+                    });
                 }
-            });
+            }
 
             // 움직이는 장애물 업데이트
             dynamicObstacles.forEach(obs => {
-                if (obs.plugin.type === 'slider') {
-                    let newX = obs.plugin.startX + Math.sin(frameCounter * obs.plugin.speed + obs.plugin.offset) * obs.plugin.range;
-                    Body.setPosition(obs, { x: newX, y: obs.position.y });
-                } else if (obs.plugin.type === 'oscillator') {
-                    let currentAngle = obs.plugin.baseAngle + Math.sin(frameCounter * obs.plugin.speed) * obs.plugin.range;
-                    Body.setAngle(obs, currentAngle);
+                if (obs.plugin.type === 'spinner') {
+                    Body.setAngle(obs, obs.angle + obs.plugin.speed);
                 }
             });
         }
@@ -408,6 +380,7 @@
 
             let viewHeightInWorld = canvas.height / cameraZoom;
             
+            // 카메라 추적 로직: 2초 미조작 시 후미 그룹(꼴등)을 보여줌
             if (!isDragging && Date.now() - lastInteractionTime > 2000 && marbles.length > 0) {
                 let lastPlaceY = Infinity;
                 marbles.forEach(m => { if (!m.plugin.finished && m.position.y < lastPlaceY) lastPlaceY = m.position.y; });
@@ -438,10 +411,10 @@
             ctx.scale(cameraZoom, cameraZoom); 
             ctx.translate(-MAP_WIDTH / 2, -cameraY);
 
-            // 일반 벽 및 장애물 렌더링 (giant_ball 제외)
+            // 벽 및 다이나믹 장애물 렌더링
             ctx.lineWidth = 2;
             world.bodies.forEach(b => {
-                if(b.bounds.max.y < viewTop || b.bounds.min.y > viewBottom || b.label==='marble' || b.label==='bumper' || b.label==='giant_ball') return;
+                if(b.bounds.max.y < viewTop || b.bounds.min.y > viewBottom || b.label==='marble' || b.label==='bumper' || b.label==='pin') return;
                 
                 ctx.beginPath();
                 b.parts.forEach((p, i) => { 
@@ -459,50 +432,33 @@
                 ctx.fill(); ctx.stroke();
             });
 
-            // 거대 원형 바운스 볼 렌더링
-            world.bodies.forEach(b => { 
-                if(b.label==='giant_ball' && b.position.y > viewTop && b.position.y < viewBottom) { 
-                    ctx.beginPath();
-                    ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, 2*Math.PI); 
-                    ctx.fillStyle = 'rgba(255, 150, 0, 0.2)'; ctx.fill();
-                    ctx.strokeStyle = 'rgba(255, 150, 0, 0.8)'; ctx.lineWidth = 4; ctx.stroke();
-                    
-                    ctx.beginPath();
-                    ctx.arc(b.position.x, b.position.y, b.circleRadius * 0.5, 0, 2*Math.PI); 
-                    ctx.fillStyle = 'rgba(255, 150, 0, 0.4)'; ctx.fill();
-                }
-            });
-
-            // 범퍼 렌더링
+            // 핀볼 & 범퍼 렌더링
             let pulse = Math.abs(Math.sin(frameCounter * 0.1)) * 5;
             world.bodies.forEach(b => { 
-                if(b.label==='bumper' && b.position.y > viewTop && b.position.y < viewBottom) { 
+                if((b.label==='bumper' || b.label==='pin') && b.position.y > viewTop && b.position.y < viewBottom) { 
                     ctx.beginPath();
-                    ctx.arc(b.position.x, b.position.y, b.circleRadius + pulse, 0, 2*Math.PI); 
-                    ctx.fillStyle = 'rgba(255, 0, 170, 0.2)'; ctx.fill();
                     
-                    ctx.beginPath();
-                    ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, 2*Math.PI); 
-                    ctx.fillStyle = 'rgba(255, 0, 170, 0.5)'; ctx.fill();
-                    ctx.strokeStyle = '#ff00aa'; ctx.lineWidth = 3; ctx.stroke();
+                    if(b.label==='bumper') {
+                        ctx.arc(b.position.x, b.position.y, b.circleRadius + pulse, 0, 2*Math.PI); 
+                        ctx.fillStyle = 'rgba(255, 0, 170, 0.2)'; ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, 2*Math.PI); 
+                        ctx.fillStyle = 'rgba(255, 0, 170, 0.5)'; ctx.fill();
+                        ctx.strokeStyle = '#ff00aa'; ctx.lineWidth = 3; ctx.stroke();
+                    } else {
+                        ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, 2*Math.PI); 
+                        ctx.fillStyle = 'rgba(255, 255, 0, 0.3)'; ctx.fill();
+                    }
                 }
             });
 
+            // 결승선
             if (FINISH_LINE > viewTop && FINISH_LINE < viewBottom) {
                 ctx.beginPath(); ctx.moveTo(0, FINISH_LINE); ctx.lineTo(MAP_WIDTH, FINISH_LINE); 
                 ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 6; ctx.setLineDash([20, 15]); ctx.stroke(); ctx.setLineDash([]);
             }
 
-            for (let i = skillRings.length - 1; i >= 0; i--) {
-                let ring = skillRings[i]; ring.radius += 18;
-                let alpha = 1 - (ring.radius / ring.maxRadius);
-                if (alpha <= 0) { skillRings.splice(i, 1); continue; }
-                ctx.beginPath(); ctx.arc(ring.x, ring.y, ring.radius, 0, 2 * Math.PI);
-                ctx.lineWidth = ring.isPull ? 4 : 8;
-                ctx.strokeStyle = `${ring.color}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}`;
-                ctx.stroke();
-            }
-
+            // 파티클
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03;
                 if (p.life <= 0) { particles.splice(i, 1); continue; }
@@ -515,6 +471,7 @@
 
             if (frameCounter % 15 === 0 && marbles.length > 0) updateLeaderboard();
 
+            // 공 렌더링
             marbles.forEach(m => {
                 let p = m.plugin;
                 if (!p.finished && m.position.y > FINISH_LINE) {
