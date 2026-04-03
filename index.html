@@ -66,12 +66,12 @@
             <span id="penalty-count-display" class="text-2xl font-black text-red-400 mt-2 block">2 명</span>
         </div>
         
-        <button id="start-btn" class="btn-neon">🚀 레이싱 시작!</button>
+        <button id="start-btn" class="btn-neon">🚀 즉시 레이싱 시작!</button>
         <button id="reset-btn" class="btn-neon btn-reset">⟳ 코스 무작위 재배치</button>
 
         <div class="mt-4 p-3 bg-gray-900/60 rounded-xl border border-gray-800 text-gray-300 text-xs">
             <span class="text-yellow-400 font-bold">💡 조작 안내</span><br>
-            마우스를 드래그하여 화면을 위아래로 움직일 수 있습니다. (2초간 가만히 두면 자동으로 꼴등을 비춰줍니다.)
+            마우스를 드래그하여 화면을 움직일 수 있습니다. (2초간 가만히 두면 꼴등을 비춰줍니다.)
         </div>
     </div>
 
@@ -146,7 +146,7 @@
         let MAP_HEIGHT = 7500; 
         let FINISH_LINE = MAP_HEIGHT - 300;
         let cameraY = 0, cameraZoom = 1; 
-        const BASE_GRAVITY = 1.8; 
+        const BASE_GRAVITY = 1.6; 
         
         let isDragging = false, previousMouseY = 0, lastInteractionTime = Date.now();
 
@@ -166,14 +166,12 @@
             buildMap();
             setupCameraControls();
 
-            // 충돌 이벤트 (범퍼 이펙트 용도)
             Events.on(engine, 'collisionStart', (event) => {
                 event.pairs.forEach(pair => {
                     let m = pair.bodyA.label === 'marble' ? pair.bodyA : (pair.bodyB.label === 'marble' ? pair.bodyB : null);
                     let b = pair.bodyA.label === 'bumper' ? pair.bodyA : (pair.bodyB.label === 'bumper' ? pair.bodyB : null);
                     if (m && b) {
                         createParticles(m.position.x, m.position.y, '#ff00aa', 15, 25);
-                        // 범퍼에 맞으면 더 강하게 튕겨나가도록 약간의 추가 힘 작용
                         Body.applyForce(m, m.position, { x: (m.position.x - b.position.x) * 0.003, y: (m.position.y - b.position.y) * 0.003 });
                     }
                 });
@@ -212,12 +210,13 @@
             document.getElementById('live-status').innerText = '대기중';
             document.getElementById('live-status').style.backgroundColor = '#0088ff';
             
-            MAP_HEIGHT = Math.max(5000, 3000 + (playersData.length * 700));
+            MAP_HEIGHT = Math.max(5000, 3000 + (playersData.length * 750));
             FINISH_LINE = MAP_HEIGHT - 300;
 
             document.getElementById('leaderboard').style.display = 'none';
             document.getElementById('result-modal').style.display = 'none';
 
+            // 마찰력을 0으로 설정하여 벽에 걸리지 않도록 방지
             const wallOpts = { isStatic: true, label: 'wall', friction: 0, restitution: 0.6 };
             let elements = [
                 Bodies.rectangle(-50, MAP_HEIGHT/2, 100, MAP_HEIGHT + 1000, wallOpts),
@@ -225,69 +224,74 @@
                 Bodies.rectangle(MAP_WIDTH/2, MAP_HEIGHT + 100, MAP_WIDTH, 200, wallOpts)
             ];
 
-            let currentY = 400;
+            let currentY = 500;
             
-            // 맵 난이도 및 구조 다변화
+            // 맵 난이도 및 갇힘 방지(Anti-Stuck) 구조 적용
             while (currentY < MAP_HEIGHT - 1200) {
                 let rand = Math.random();
                 
                 if (rand < 0.25) {
-                    // 1. 네온 핀볼 범퍼 구간
-                    for (let py = currentY; py < currentY + 500; py += 160) {
+                    // 1. 네온 핀볼 범퍼 구간 (여백 확장)
+                    for (let py = currentY; py < currentY + 500; py += 180) {
                         let offset = Math.random() * 80;
-                        for (let px = 200; px < MAP_WIDTH - 150; px += 250 + Math.random() * 100) {
+                        for (let px = 200; px < MAP_WIDTH - 150; px += 280 + Math.random() * 100) {
                             elements.push(Bodies.circle(px + offset, py, 35, { 
                                 isStatic: true, restitution: 1.6, friction: 0, label: 'bumper'
                             }));
                         }
                     }
-                    currentY += 700;
+                    currentY += 750;
                     
                 } else if (rand < 0.5) {
-                    // 2. 고속 십자형 스피너
+                    // 2. 고속 십자형 스피너 + 계단식 유도선
                     let xOff = MAP_WIDTH/2 + (Math.random() > 0.5 ? 200 : -200);
-                    let p1 = Bodies.rectangle(xOff, currentY + 200, 400, 40);
-                    let p2 = Bodies.rectangle(xOff, currentY + 200, 40, 400);
+                    let p1 = Bodies.rectangle(xOff, currentY + 250, 400, 40);
+                    let p2 = Bodies.rectangle(xOff, currentY + 250, 40, 400);
                     let cross = Body.create({ 
-                        parts: [p1, p2], isStatic: true, restitution: 0.8,
+                        parts: [p1, p2], isStatic: true, restitution: 0.8, friction: 0,
                         plugin: { type: 'spinner', speed: (Math.random() > 0.5 ? 0.08 : -0.08) } 
                     });
                     elements.push(cross); dynamicObstacles.push(cross);
                     
-                    elements.push(Bodies.rectangle(200, currentY, 600, 40, { isStatic: true, angle: 0.4, label: 'wall' }));
-                    elements.push(Bodies.rectangle(1400, currentY, 600, 40, { isStatic: true, angle: -0.4, label: 'wall' }));
+                    // 대칭형 V자 방지: 좌측은 높고, 우측은 낮게. 각도도 가파르게.
+                    elements.push(Bodies.rectangle(250, currentY, 700, 40, { isStatic: true, angle: 0.35, label: 'wall', friction: 0 }));
+                    elements.push(Bodies.rectangle(1350, currentY + 150, 700, 40, { isStatic: true, angle: -0.35, label: 'wall', friction: 0 }));
                     
-                    currentY += 600;
+                    currentY += 700;
                     
                 } else if (rand < 0.75) {
-                    // 3. 앞뒤로 스윙하는 플리퍼
-                    let flipperLeft = Bodies.rectangle(200, currentY, 600, 40, { 
-                        isStatic: true, restitution: 0.8, chamfer: {radius: 20},
-                        plugin: { type: 'oscillator', startX: 200, startY: currentY, baseAngle: 0.2, range: 0.5, speed: 0.06 } 
+                    // 3. 앞뒤로 스윙하는 플리퍼 및 중앙 분리대
+                    elements.push(Bodies.rectangle(MAP_WIDTH/2, currentY, 100, 100, { isStatic: true, angle: Math.PI/4, label: 'wall', friction: 0 })); // 중앙 스플리터
+                    
+                    let flipperLeft = Bodies.rectangle(200, currentY + 150, 600, 40, { 
+                        isStatic: true, restitution: 0.8, chamfer: {radius: 20}, friction: 0,
+                        plugin: { type: 'oscillator', startX: 200, startY: currentY + 150, baseAngle: 0.2, range: 0.5, speed: 0.06 } 
                     });
-                    let flipperRight = Bodies.rectangle(MAP_WIDTH-200, currentY+200, 600, 40, { 
-                        isStatic: true, restitution: 0.8, chamfer: {radius: 20},
-                        plugin: { type: 'oscillator', startX: MAP_WIDTH-200, startY: currentY+200, baseAngle: -0.2, range: 0.5, speed: 0.06 } 
+                    let flipperRight = Bodies.rectangle(MAP_WIDTH-200, currentY + 300, 600, 40, { 
+                        isStatic: true, restitution: 0.8, chamfer: {radius: 20}, friction: 0,
+                        plugin: { type: 'oscillator', startX: MAP_WIDTH-200, startY: currentY + 300, baseAngle: -0.2, range: 0.5, speed: 0.06 } 
                     });
                     elements.push(flipperLeft, flipperRight); dynamicObstacles.push(flipperLeft, flipperRight);
-                    currentY += 500;
+                    currentY += 600;
                     
                 } else {
-                    // 4. 슬라이더 + 바늘구멍 코스
-                    elements.push(Bodies.rectangle(MAP_WIDTH/2 - 300, currentY, 600, 40, { isStatic: true, angle: 0.1, label: 'wall' }));
-                    elements.push(Bodies.rectangle(MAP_WIDTH/2 + 300, currentY, 600, 40, { isStatic: true, angle: -0.1, label: 'wall' }));
+                    // 4. 슬라이더 + 폭포식 유도선 (가장 갇히기 쉬운 구간 전면 수정)
+                    // 완벽한 대칭형(V)이 되지 않도록 높이(Y)와 폭을 다르게 배치
+                    elements.push(Bodies.rectangle(MAP_WIDTH/2 - 350, currentY, 700, 40, { isStatic: true, angle: 0.3, label: 'wall', friction: 0 }));
+                    elements.push(Bodies.rectangle(MAP_WIDTH/2 + 350, currentY + 200, 700, 40, { isStatic: true, angle: -0.3, label: 'wall', friction: 0 }));
                     
-                    let slider = Bodies.rectangle(MAP_WIDTH/2, currentY + 250, 400, 30, { 
-                        isStatic: true, restitution: 0.5, chamfer: {radius: 15},
+                    let slider = Bodies.rectangle(MAP_WIDTH/2, currentY + 350, 350, 30, { 
+                        isStatic: true, restitution: 0.5, chamfer: {radius: 15}, friction: 0,
                         plugin: { type: 'slider', startX: MAP_WIDTH/2, range: 400, speed: 0.04, offset: 0 } 
                     });
                     elements.push(slider); dynamicObstacles.push(slider);
-                    currentY += 450;
+                    currentY += 550;
                 }
             }
 
+            // 결승선 가이드 기둥
             for (let i = 1; i < 10; i++) {
-                elements.push(Bodies.rectangle(i * (MAP_WIDTH / 10), MAP_HEIGHT - 200, 20, 600, { isStatic: true, restitution: 0.5, label: 'wall' }));
+                elements.push(Bodies.rectangle(i * (MAP_WIDTH / 10), MAP_HEIGHT - 200, 20, 600, { isStatic: true, restitution: 0.5, label: 'wall', friction: 0 }));
             }
 
             Composite.add(world, elements);
@@ -305,9 +309,9 @@
             document.getElementById('live-status').style.backgroundColor = '#ff0055';
 
             playersData.forEach((name, i) => {
-                // 시작 즉시 공 생성 및 부스터 적용
+                // 마찰력을 최소화하여 중간에 멈추는 현상 완화
                 const marble = Bodies.circle((MAP_WIDTH / 2) + (Math.random() * 800 - 400), -300 - (i * 80), 24, { 
-                    restitution: 0.7, friction: 0.005, frictionAir: 0.003, density: 0.08, 
+                    restitution: 0.7, friction: 0.001, frictionAir: 0.005, density: 0.08, 
                     label: 'marble',
                     plugin: { 
                         name: name, color: colors[i % colors.length], trail: [], 
@@ -315,8 +319,7 @@
                         skillTimer: Math.floor(Math.random() * 180), skillCount: 0 
                     }
                 });
-                // 초기 부스터 적용 (아래 방향)
-                Body.setVelocity(marble, { x: (Math.random() - 0.5) * 15, y: 15 });
+                Body.setVelocity(marble, { x: (Math.random() - 0.5) * 15, y: 12 });
                 marbles.push(marble);
                 Composite.add(world, marble);
             });
@@ -377,6 +380,12 @@
         function updateLogic() {
             marbles.forEach(m => {
                 if (m.plugin.finished) return;
+                
+                // [안전장치] 공이 틈새나 구조물 위에서 멈춰있을 경우, 미세한 힘을 가해 강제로 튕겨냄
+                if (Math.abs(m.velocity.x) < 0.3 && Math.abs(m.velocity.y) < 0.3) {
+                    Body.applyForce(m, m.position, { x: (Math.random() - 0.5) * 0.015, y: 0.015 });
+                }
+
                 m.plugin.skillTimer++;
                 if (m.plugin.skillTimer >= 220 && m.plugin.skillCount < 3) {
                     m.plugin.skillTimer = 0;
