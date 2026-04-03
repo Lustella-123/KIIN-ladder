@@ -225,12 +225,11 @@
 
             let currentY = 500;
             
-            // 맵 디자인 재설계: 갇히는 구간 제거 및 각 요소간 여유 공간 대폭 확보
             while (currentY < MAP_HEIGHT - 1200) {
                 let rand = Math.random();
                 
                 if (rand < 0.25) {
-                    // 1. 네온 핀볼 범퍼 구간 (여유 공간 충분)
+                    // 1. 네온 핀볼 범퍼 구간 
                     for (let py = currentY; py < currentY + 400; py += 180) {
                         let offset = Math.random() * 80;
                         for (let px = 250; px < MAP_WIDTH - 200; px += 300 + Math.random() * 50) {
@@ -242,24 +241,21 @@
                     currentY += 600;
                     
                 } else if (rand < 0.5) {
-                    // 2. 십자형 스피너 (주변 벽 제거하여 갇힘 원천 차단)
-                    // 스피너는 맵 중앙에 넓게 배치되고, 이와 겹치는 높이(Y축)에는 어떠한 벽도 두지 않음.
-                    let p1 = Bodies.rectangle(MAP_WIDTH/2, currentY + 200, 500, 40);
-                    let p2 = Bodies.rectangle(MAP_WIDTH/2, currentY + 200, 40, 500);
-                    let cross = Body.create({ 
-                        parts: [p1, p2], isStatic: true, restitution: 0.8, friction: 0,
-                        plugin: { type: 'spinner', speed: (Math.random() > 0.5 ? 0.08 : -0.08) } 
+                    // 2. 십자가 완전 제거 -> 대형 좌우 왕복 바운스 볼 (원형이라 절대 끼이지 않음)
+                    let giantBall = Bodies.circle(MAP_WIDTH/2, currentY + 250, 120, { 
+                        isStatic: true, restitution: 1.5, friction: 0, label: 'giant_ball',
+                        plugin: { type: 'slider', startX: MAP_WIDTH/2, range: 450, speed: 0.05, offset: 0 } 
                     });
-                    elements.push(cross); dynamicObstacles.push(cross);
+                    elements.push(giantBall); dynamicObstacles.push(giantBall);
                     
-                    // 스피너를 완전히 통과한 훨씬 아래(Y + 600)에 유도선 배치
+                    // 넉넉한 유도선 배치 (끼일 틈새 없음)
                     elements.push(Bodies.rectangle(350, currentY + 600, 700, 40, { isStatic: true, angle: 0.4, label: 'wall', friction: 0 }));
                     elements.push(Bodies.rectangle(1250, currentY + 750, 700, 40, { isStatic: true, angle: -0.4, label: 'wall', friction: 0 }));
                     
                     currentY += 950;
                     
                 } else if (rand < 0.75) {
-                    // 3. 스윙 플리퍼 (벽과의 간격 최소 250px 이상 강제)
+                    // 3. 스윙 플리퍼
                     let flipperLeft = Bodies.rectangle(400, currentY + 150, 500, 40, { 
                         isStatic: true, restitution: 0.8, chamfer: {radius: 20}, friction: 0,
                         plugin: { type: 'oscillator', startX: 400, startY: currentY + 150, baseAngle: 0.2, range: 0.5, speed: 0.06 } 
@@ -272,11 +268,10 @@
                     currentY += 600;
                     
                 } else {
-                    // 4. 슬라이더 (움직이는 경로와 유도선의 Y축을 완전히 분리)
+                    // 4. 슬라이더 
                     elements.push(Bodies.rectangle(MAP_WIDTH/2 - 400, currentY, 600, 40, { isStatic: true, angle: 0.4, label: 'wall', friction: 0 }));
                     elements.push(Bodies.rectangle(MAP_WIDTH/2 + 400, currentY + 250, 600, 40, { isStatic: true, angle: -0.4, label: 'wall', friction: 0 }));
                     
-                    // 벽이 모두 끝난 아래쪽 공간(Y + 500)에 슬라이더 배치
                     let slider = Bodies.rectangle(MAP_WIDTH/2, currentY + 500, 400, 30, { 
                         isStatic: true, restitution: 0.5, chamfer: {radius: 15}, friction: 0,
                         plugin: { type: 'slider', startX: MAP_WIDTH/2, range: 350, speed: 0.04, offset: 0 } 
@@ -286,7 +281,6 @@
                 }
             }
 
-            // 결승선 가이드 기둥 (폭넓게 배치)
             for (let i = 1; i < 10; i++) {
                 elements.push(Bodies.rectangle(i * (MAP_WIDTH / 10), MAP_HEIGHT - 200, 20, 600, { isStatic: true, restitution: 0.5, label: 'wall', friction: 0 }));
             }
@@ -307,7 +301,7 @@
 
             playersData.forEach((name, i) => {
                 const marble = Bodies.circle((MAP_WIDTH / 2) + (Math.random() * 800 - 400), -300 - (i * 80), 24, { 
-                    restitution: 0.7, friction: 0, frictionAir: 0.005, density: 0.08,  // 공 자체 마찰력 0
+                    restitution: 0.7, friction: 0, frictionAir: 0.005, density: 0.08, 
                     label: 'marble',
                     plugin: { 
                         name: name, color: colors[i % colors.length], trail: [], 
@@ -376,8 +370,6 @@
         function updateLogic() {
             marbles.forEach(m => {
                 if (m.plugin.finished) return;
-                
-                // 억지로 넣었던 멈춤 방지 임시방편(applyForce) 완전히 삭제 완료.
 
                 m.plugin.skillTimer++;
                 if (m.plugin.skillTimer >= 220 && m.plugin.skillCount < 3) {
@@ -389,11 +381,9 @@
                 }
             });
 
-            // 움직이는 장애물 업데이트 로직
+            // 움직이는 장애물 업데이트
             dynamicObstacles.forEach(obs => {
-                if (obs.plugin.type === 'spinner') {
-                    Body.setAngle(obs, obs.angle + obs.plugin.speed);
-                } else if (obs.plugin.type === 'slider') {
+                if (obs.plugin.type === 'slider') {
                     let newX = obs.plugin.startX + Math.sin(frameCounter * obs.plugin.speed + obs.plugin.offset) * obs.plugin.range;
                     Body.setPosition(obs, { x: newX, y: obs.position.y });
                 } else if (obs.plugin.type === 'oscillator') {
@@ -418,7 +408,6 @@
 
             let viewHeightInWorld = canvas.height / cameraZoom;
             
-            // 2초 미조작 시 꼴등 추적 로직
             if (!isDragging && Date.now() - lastInteractionTime > 2000 && marbles.length > 0) {
                 let lastPlaceY = Infinity;
                 marbles.forEach(m => { if (!m.plugin.finished && m.position.y < lastPlaceY) lastPlaceY = m.position.y; });
@@ -449,10 +438,10 @@
             ctx.scale(cameraZoom, cameraZoom); 
             ctx.translate(-MAP_WIDTH / 2, -cameraY);
 
-            // 벽 및 다이나믹 장애물 렌더링
+            // 일반 벽 및 장애물 렌더링 (giant_ball 제외)
             ctx.lineWidth = 2;
             world.bodies.forEach(b => {
-                if(b.bounds.max.y < viewTop || b.bounds.min.y > viewBottom || b.label==='marble' || b.label==='bumper') return;
+                if(b.bounds.max.y < viewTop || b.bounds.min.y > viewBottom || b.label==='marble' || b.label==='bumper' || b.label==='giant_ball') return;
                 
                 ctx.beginPath();
                 b.parts.forEach((p, i) => { 
@@ -468,6 +457,20 @@
                     ctx.fillStyle = 'rgba(0, 220, 255, 0.1)'; ctx.strokeStyle = 'rgba(0, 220, 255, 0.5)';
                 }
                 ctx.fill(); ctx.stroke();
+            });
+
+            // 거대 원형 바운스 볼 렌더링
+            world.bodies.forEach(b => { 
+                if(b.label==='giant_ball' && b.position.y > viewTop && b.position.y < viewBottom) { 
+                    ctx.beginPath();
+                    ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, 2*Math.PI); 
+                    ctx.fillStyle = 'rgba(255, 150, 0, 0.2)'; ctx.fill();
+                    ctx.strokeStyle = 'rgba(255, 150, 0, 0.8)'; ctx.lineWidth = 4; ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.arc(b.position.x, b.position.y, b.circleRadius * 0.5, 0, 2*Math.PI); 
+                    ctx.fillStyle = 'rgba(255, 150, 0, 0.4)'; ctx.fill();
+                }
             });
 
             // 범퍼 렌더링
