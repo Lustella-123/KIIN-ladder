@@ -17,6 +17,13 @@
 
         #leaderboard { position: absolute; top: 20px; right: 20px; width: 280px; z-index: 10; background: rgba(10, 10, 18, 0.7); padding: 20px; border-radius: 16px; border: 1px solid rgba(0, 255, 255, 0.3); backdrop-filter: blur(12px); color: white; display: none; box-shadow: 0 8px 32px rgba(0,255,255,0.1); }
         
+        /* 모바일 및 작은 화면을 위한 반응형 레이아웃 개선 */
+        @media (max-width: 768px) {
+            #ui-panel { width: 90%; left: 5%; top: 10px; max-height: 45vh; padding: 15px; }
+            #leaderboard { width: 90%; left: 5%; top: auto; bottom: 10px; right: auto; max-height: 40vh; overflow-y: auto; padding: 15px; }
+            .result-box { width: 95%; padding: 30px; }
+        }
+
         .player-tag { background: rgba(0, 240, 255, 0.15); border: 1px solid #00f0ff; color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
         .player-tag:hover { background: rgba(0, 240, 255, 0.3); }
         .tag-remove { cursor: pointer; color: #ff0055; font-weight: bold; width: 16px; height: 16px; display: inline-flex; justify-content: center; align-items: center; border-radius: 50%; }
@@ -67,7 +74,7 @@
 
         <div class="mt-4 p-3 bg-gray-900/60 rounded-xl border border-gray-800 text-gray-300 text-xs">
             <span class="text-yellow-400 font-bold">💡 스킬 효과 (자동 발동)</span><br>
-            약 3초마다 10% 확률로 주변 구슬을 <b>확 밀어내거나</b>(빨강), <b>끌어당겨서</b>(파랑) 순위 변동을 만듭니다.
+            일정 주기마다 주변 구슬을 <b>확 밀어내거나</b>(빨강), <b>끌어당겨서</b>(파랑) 순위 변동을 만듭니다. (최대 3회 사용 제한)
         </div>
     </div>
 
@@ -133,16 +140,24 @@
         function addPlayer() {
             const input = document.getElementById('player-add-input');
             const name = input.value.trim();
-            if(name && !playersData.includes(name)) {
+            
+            // 중복 이름 체크 로직 추가
+            if(name) {
+                if (playersData.includes(name)) {
+                    alert('이미 등록된 참가자입니다.');
+                    return;
+                }
                 playersData.push(name);
                 input.value = '';
                 renderPlayerTags();
+                buildMap(); // 추가 시 맵 길이 바로 반영
             }
         }
 
         function removePlayer(index) {
             playersData.splice(index, 1);
             renderPlayerTags();
+            buildMap(); // 제거 시 맵 길이 바로 반영
         }
 
         document.getElementById('player-add-input').addEventListener('keypress', (e) => {
@@ -165,8 +180,10 @@
         let marbles = [], particles = [], finishedMarbles = [], skillRings = [];
         
         const MAP_WIDTH = 1600;
-        const MAP_HEIGHT = 7500; 
-        const FINISH_LINE = MAP_HEIGHT - 300;
+        
+        // 동적인 맵 높이 계산을 위해 전역 변수로 분리 (개선사항 4)
+        let MAP_HEIGHT = 7500; 
+        let FINISH_LINE = MAP_HEIGHT - 300;
         
         let cameraY = 0;
         let cameraZoom = 1; 
@@ -179,7 +196,8 @@
 
         function init() {
             engine = Engine.create();
-            engine.enableSleeping = true; 
+            // 구슬 멈춤(Sleep) 방지 설정 (개선사항 1)
+            engine.enableSleeping = false; 
             world = engine.world;
             world.gravity.y = BASE_GRAVITY; 
 
@@ -199,7 +217,6 @@
         function handleResize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            // 카메라를 더 멀리서 잡도록 넓은 뷰포트 설정
             cameraZoom = Math.min(0.8, Math.max(0.3, window.innerWidth / (MAP_WIDTH + 600)));
         }
 
@@ -209,6 +226,10 @@
             marbles = []; finishedMarbles = []; particles = []; skillRings = [];
             cameraY = 0; world.gravity.y = BASE_GRAVITY;
             
+            // 참가자 인원에 비례하여 맵의 전체 길이 동적 산출 (개선사항 4)
+            MAP_HEIGHT = Math.max(4000, 2500 + (playersData.length * 600));
+            FINISH_LINE = MAP_HEIGHT - 300;
+
             document.getElementById('leaderboard').style.display = 'none';
             document.getElementById('result-modal').style.display = 'none';
 
@@ -219,11 +240,9 @@
                 Bodies.rectangle(MAP_WIDTH/2, MAP_HEIGHT + 100, MAP_WIDTH, 200, wallOpts)
             ];
 
-            // 자연스럽게 겹치고 튕기는 맵 구조 (경사로 + 핀 밭)
             let currentY = 400;
             
             while (currentY < MAP_HEIGHT - 1200) {
-                // 부드러운 경사로 추가
                 let isLeft = Math.random() > 0.5;
                 let width = 600 + Math.random() * 400;
                 let x = (MAP_WIDTH / 2) + (isLeft ? -300 : 300);
@@ -233,7 +252,6 @@
                     isStatic: true, angle: angle, friction: 0, restitution: 0.5, label: 'wall', chamfer: { radius: 20 } 
                 }));
                 
-                // 촘촘한 핀(장애물) 구간 - 엎치락 뒤치락 유도
                 let pinStartY = currentY + 300;
                 for (let py = pinStartY; py < pinStartY + 400; py += 150) {
                     let offset = Math.random() * 50;
@@ -247,7 +265,6 @@
                 currentY += 900;
             }
 
-            // 하단 피니쉬 라인 가이드 (골인 칸막이)
             for (let i = 1; i < 10; i++) {
                 elements.push(Bodies.rectangle(i * (MAP_WIDTH / 10), MAP_HEIGHT - 200, 20, 600, { isStatic: true, restitution: 0.5, label: 'wall' }));
             }
@@ -259,7 +276,9 @@
             if(playersData.length === 0) return alert("참가자를 최소 1명 이상 추가해주세요!");
             if(marbles.length > 0) buildMap();
             
-            document.getElementById('ui-panel').style.transform = 'translateY(-150%) scale(0.9)';
+            // 모바일 화면 대응하여 Y축 위치 조절
+            const isMobile = window.innerWidth <= 768;
+            document.getElementById('ui-panel').style.transform = isMobile ? 'translateY(-200%) scale(0.9)' : 'translateY(-150%) scale(0.9)';
             document.getElementById('ui-panel').style.opacity = '0';
             document.getElementById('leaderboard').style.display = 'block';
 
@@ -270,7 +289,8 @@
                     plugin: { 
                         name: name, color: colors[i % colors.length], trail: [], 
                         finished: false, stopped: false, rank: 0, 
-                        skillTimer: Math.floor(Math.random() * 180) // 스킬 타이머 시작점 다르게
+                        skillTimer: Math.floor(Math.random() * 180),
+                        skillCount: 0 // 스킬 발동 횟수 제한 카운터 추가 (개선사항 2)
                     }
                 });
                 Body.setVelocity(marble, { x: (Math.random() - 0.5) * 10, y: 5 });
@@ -283,11 +303,9 @@
             const radius = 350;
             const forceMag = 0.04;
             
-            // 시각 효과 등록
             skillRings.push({ x: marble.position.x, y: marble.position.y, radius: 0, maxRadius: radius, color: isPull ? '#0088ff' : '#ff0055', isPull: isPull });
             createParticles(marble.position.x, marble.position.y, isPull ? '#0088ff' : '#ff0055', 20, 10);
 
-            // 주변 구슬에 물리력 행사
             marbles.forEach(other => {
                 if (other === marble || other.plugin.finished) return;
                 
@@ -322,7 +340,7 @@
                 
                 losers.forEach(loser => {
                     createParticles(loser.position.x, loser.position.y, '#ff0055', 80, 25);
-                    Body.setPosition(loser, {x: -2000, y: -2000}); // 퇴장 처리
+                    Body.setPosition(loser, {x: -2000, y: -2000}); 
                 });
 
                 losers.reverse().forEach(loser => { 
@@ -343,16 +361,12 @@
             marbles.forEach(m => {
                 if (m.plugin.finished) return;
 
-                // 멈춤 방지용 약간의 힘
-                if (Math.abs(m.velocity.y) < 0.5 && Math.abs(m.velocity.x) < 0.5) {
-                    Body.applyForce(m, m.position, { x: (Math.random() - 0.5) * 0.05 * m.mass, y: 0.05 * m.mass });
-                }
-
-                // 스킬 발동 로직 (약 3초마다 판정)
+                // 스킬 밸런스 조정: 쿨타임 증가 및 횟수 제한(최대 3번) (개선사항 2)
                 m.plugin.skillTimer++;
-                if (m.plugin.skillTimer >= 180) {
+                if (m.plugin.skillTimer >= 220 && m.plugin.skillCount < 3) {
                     m.plugin.skillTimer = 0;
-                    if (Math.random() < 0.10) { // 10% 확률
+                    if (Math.random() < 0.15) { 
+                        m.plugin.skillCount++;
                         const isPull = Math.random() < 0.5;
                         triggerSkill(m, isPull);
                     }
@@ -373,7 +387,6 @@
             ctx.fillStyle = bgGradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 카메라 위치 보정 (더 넓게 보기 위해 Y축 보정량 조절)
             let leaderY = 0; 
             marbles.forEach(m => { if (!m.plugin.finished && m.position.y > leaderY) leaderY = m.position.y; });
             if (leaderY === 0 && finishedMarbles.length > 0) leaderY = MAP_HEIGHT; 
@@ -383,7 +396,6 @@
             if (targetCameraY > MAP_HEIGHT - viewHeightInWorld + 200) targetCameraY = MAP_HEIGHT - viewHeightInWorld + 200;
             cameraY += (targetCameraY - cameraY) * 0.06; 
 
-            // 배경 그리드
             ctx.strokeStyle = 'rgba(0, 255, 255, 0.03)';
             ctx.lineWidth = 1;
             let gridY = (cameraY * cameraZoom) % 80;
@@ -397,7 +409,6 @@
             ctx.scale(cameraZoom, cameraZoom); 
             ctx.translate(-MAP_WIDTH / 2, -cameraY);
 
-            // 벽 렌더링
             ctx.fillStyle = 'rgba(0, 220, 255, 0.1)'; ctx.strokeStyle = 'rgba(0, 220, 255, 0.5)'; ctx.lineWidth = 2;
             ctx.beginPath();
             world.bodies.forEach(b => {
@@ -406,7 +417,6 @@
             });
             ctx.fill(); ctx.stroke();
 
-            // 핀 렌더링
             ctx.fillStyle = 'rgba(255, 255, 0, 0.3)'; ctx.beginPath();
             world.bodies.forEach(b => { 
                 if(b.label==='pin' && b.position.y > viewTop && b.position.y < viewBottom) { 
@@ -416,13 +426,11 @@
             });
             ctx.fill();
 
-            // 결승선
             if (FINISH_LINE > viewTop && FINISH_LINE < viewBottom) {
                 ctx.beginPath(); ctx.moveTo(0, FINISH_LINE); ctx.lineTo(MAP_WIDTH, FINISH_LINE); 
                 ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 6; ctx.setLineDash([20, 15]); ctx.stroke(); ctx.setLineDash([]);
             }
 
-            // 스킬 링 효과 렌더링
             for (let i = skillRings.length - 1; i >= 0; i--) {
                 let ring = skillRings[i];
                 ring.radius += 15;
@@ -440,7 +448,6 @@
                 ctx.stroke();
             }
 
-            // 파티클
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03;
                 if (p.life <= 0) { particles.splice(i, 1); continue; }
@@ -453,7 +460,6 @@
 
             if (frameCounter % 15 === 0) updateLeaderboard();
 
-            // 구슬 렌더링
             marbles.forEach(m => {
                 let p = m.plugin;
                 if (!p.finished && m.position.y > FINISH_LINE) {
