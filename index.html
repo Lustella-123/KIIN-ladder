@@ -37,6 +37,8 @@
         .neon-text { color: #fff; text-shadow: 0 0 10px rgba(0, 255, 255, 0.5), 0 0 20px rgba(0, 255, 255, 0.3); }
         .btn-neon { background: linear-gradient(135deg, #00c6ff, #0072ff); border: none; color: white; padding: 14px; border-radius: 10px; font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: all 0.3s; width: 100%; box-shadow: 0 4px 15px rgba(0, 114, 255, 0.3); }
         .btn-neon:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 114, 255, 0.5); }
+        .btn-speed { background: linear-gradient(135deg, #ff0055, #ff8800); margin-top: 10px; box-shadow: 0 4px 15px rgba(255, 85, 0, 0.3); }
+        .btn-speed:hover { box-shadow: 0 6px 20px rgba(255, 85, 0, 0.5); }
         .btn-reset { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); margin-top: 12px; color: #aaa; font-weight: 600; box-shadow: none; font-size: 0.95rem; }
         .btn-reset:hover { background: rgba(255, 255, 255, 0.1); color: #fff; transform: none; }
         
@@ -52,7 +54,7 @@
 <body>
 
     <div id="ui-panel">
-        <h1 class="text-4xl font-black mb-6 neon-text text-center tracking-wide">KIIN <span class="text-xl text-cyan-400 font-bold">RACING</span></h1>
+        <h1 class="text-4xl font-black mb-6 neon-text text-center tracking-wide">MARBLE <span class="text-xl text-cyan-400 font-bold">ROULETTE</span></h1>
         
         <label class="text-cyan-300 text-sm font-bold mb-2 block">참가자 명단 설정</label>
         <div class="flex gap-2 mb-3">
@@ -66,13 +68,14 @@
             <span id="penalty-count-display" class="text-2xl font-black text-red-400 mt-2 block">2 명</span>
         </div>
         
-        <button id="start-btn" class="btn-neon">🚀 즉시 레이싱 시작!</button>
+        <button id="start-btn" class="btn-neon">🚀 레이싱 시작!</button>
+        <button id="speed-btn" class="btn-neon btn-speed">⏩ 2배속 모드 켜기</button>
         <button id="reset-btn" class="btn-neon btn-reset">⟳ 코스 무작위 재배치</button>
 
         <div class="mt-4 p-3 bg-gray-900/60 rounded-xl border border-gray-800 text-gray-300 text-xs">
-            <span class="text-yellow-400 font-bold">💡 조작 및 시스템 안내</span><br>
-            • 마우스를 드래그하여 화면을 위아래로 볼 수 있습니다.<br>
-            • <b>고무줄 효과:</b> 후미 그룹은 공기저항이 적어져 무서운 속도로 선두를 추격합니다. 끝까지 방심할 수 없습니다!
+            <span class="text-yellow-400 font-bold">💡 시스템 안내</span><br>
+            • 마우스를 위아래로 드래그하여 화면을 움직일 수 있습니다.<br>
+            • <b>고무줄 시스템:</b> 1등은 공기저항을 받아 느려지고, 꼴등은 미친 속도로 추격합니다! 끝까지 방심 금물.
         </div>
     </div>
 
@@ -142,6 +145,7 @@
 
         let engine, runner, world;
         let marbles = [], particles = [], finishedMarbles = [], dynamicObstacles = [];
+        let isFastForward = false;
         
         const MAP_WIDTH = 1600;
         let MAP_HEIGHT = 7500; 
@@ -167,13 +171,18 @@
             buildMap();
             setupCameraControls();
 
+            // 충돌 시 화려한 네온 파티클 생성
             Events.on(engine, 'collisionStart', (event) => {
                 event.pairs.forEach(pair => {
                     let m = pair.bodyA.label === 'marble' ? pair.bodyA : (pair.bodyB.label === 'marble' ? pair.bodyB : null);
                     let b = pair.bodyA.label === 'bumper' ? pair.bodyA : (pair.bodyB.label === 'bumper' ? pair.bodyB : null);
+                    let pin = pair.bodyA.label === 'pin' ? pair.bodyA : (pair.bodyB.label === 'pin' ? pair.bodyB : null);
+                    
                     if (m && b) {
                         createParticles(m.position.x, m.position.y, '#ff00aa', 15, 25);
-                        Body.applyForce(m, m.position, { x: (m.position.x - b.position.x) * 0.003, y: (m.position.y - b.position.y) * 0.003 });
+                    } else if (m && pin) {
+                        // 핀과 부딪히면 작고 약한 불꽃
+                        if (Math.random() > 0.5) createParticles(m.position.x, m.position.y, '#00ffcc', 3, 5);
                     }
                 });
             });
@@ -183,6 +192,14 @@
             Events.on(engine, 'beforeUpdate', updateLogic); 
             requestAnimationFrame(render);
         }
+
+        // 2배속 모드 토글
+        document.getElementById('speed-btn').addEventListener('click', (e) => {
+            isFastForward = !isFastForward;
+            engine.timing.timeScale = isFastForward ? 2.0 : 1.0;
+            e.target.innerHTML = isFastForward ? '▶️ 정상 속도 복귀' : '⏩ 2배속 모드 켜기';
+            e.target.style.background = isFastForward ? 'linear-gradient(135deg, #00c6ff, #0072ff)' : 'linear-gradient(135deg, #ff0055, #ff8800)';
+        });
 
         function setupCameraControls() {
             const pointerDown = (y) => { isDragging = true; previousMouseY = y; lastInteractionTime = Date.now(); };
@@ -211,71 +228,88 @@
             document.getElementById('live-status').innerText = '대기중';
             document.getElementById('live-status').style.backgroundColor = '#0088ff';
             
-            MAP_HEIGHT = Math.max(6000, 3000 + (playersData.length * 800));
+            // 인원수에 비례해 맵 길이 조절
+            MAP_HEIGHT = Math.max(7000, 4000 + (playersData.length * 700));
             FINISH_LINE = MAP_HEIGHT - 300;
 
             document.getElementById('leaderboard').style.display = 'none';
             document.getElementById('result-modal').style.display = 'none';
 
-            // 마찰력을 0으로 설정하여 미끄러지듯 내려가게 설정
             const wallOpts = { isStatic: true, label: 'wall', friction: 0, restitution: 0.5 };
             let elements = [
                 Bodies.rectangle(-50, MAP_HEIGHT/2, 100, MAP_HEIGHT + 1000, wallOpts),
                 Bodies.rectangle(MAP_WIDTH + 50, MAP_HEIGHT/2, 100, MAP_HEIGHT + 1000, wallOpts)
             ];
 
-            // 갇힘 원천 차단 구조 설계 (구간별 여백 400px 이상 확보)
             let currentY = 500;
-            let isLeft = true;
+            let sectionIndex = 0;
             
+            // 무조건 공간이 확보되는 4가지 테마를 번갈아가며 생성
             while (currentY < MAP_HEIGHT - 1200) {
-                let sectionType = Math.floor(Math.random() * 3);
+                let type = sectionIndex % 4; 
                 
-                if (sectionType === 0) {
-                    // 1. 거대 지그재그 슬라이드 (Pachinko style)
-                    // 절대 겹치지 않고 좌우로 번갈아가며 흘러가도록 설계
-                    let x = isLeft ? 300 : MAP_WIDTH - 300;
-                    let angle = isLeft ? 0.35 : -0.35; // 약 20도 경사로 확실히 굴러떨어지게 설정
-                    
-                    elements.push(Bodies.rectangle(x, currentY, 1200, 50, { 
-                        isStatic: true, angle: angle, friction: 0, restitution: 0.4, label: 'wall', chamfer: {radius: 25} 
-                    }));
-                    
-                    // 빈 공간 쪽에 튕기는 범퍼 몇 개 배치
-                    let bumperX = isLeft ? MAP_WIDTH - 300 : 300;
-                    elements.push(Bodies.circle(bumperX, currentY + 150, 40, { isStatic: true, restitution: 1.4, friction: 0, label: 'bumper' }));
-                    elements.push(Bodies.circle(bumperX + (isLeft ? 200 : -200), currentY + 250, 30, { isStatic: true, restitution: 1.4, friction: 0, label: 'bumper' }));
-                    
+                if (type === 0) {
+                    // 테마 1: 깔때기 (거대 유도선)
+                    elements.push(Bodies.rectangle(MAP_WIDTH/2 - 500, currentY, 1000, 40, { isStatic: true, angle: 0.35, label: 'wall', friction: 0, chamfer:{radius:20} }));
+                    elements.push(Bodies.rectangle(MAP_WIDTH/2 + 500, currentY, 1000, 40, { isStatic: true, angle: -0.35, label: 'wall', friction: 0, chamfer:{radius:20} }));
                     currentY += 600;
-                    isLeft = !isLeft;
                     
-                } else if (sectionType === 1) {
-                    // 2. 탁 트인 핀볼 밭 (여유 공간 충분)
-                    for (let py = currentY; py < currentY + 400; py += 180) {
-                        let offset = Math.random() * 100;
-                        for (let px = 250; px < MAP_WIDTH - 200; px += 350 + Math.random() * 50) {
-                            elements.push(Bodies.circle(px + offset, py, 25, { 
-                                isStatic: true, restitution: 1.1, friction: 0, label: 'pin'
+                } else if (type === 1) {
+                    // 테마 2: 거대 핀볼(Plinko) 밭 - 아케이드 감성의 핵심
+                    let rows = 0;
+                    for (let py = currentY; py < currentY + 1200; py += 140) {
+                        let offset = (rows % 2 === 0) ? 0 : 70;
+                        for (let px = 200; px < MAP_WIDTH - 150; px += 140) {
+                            elements.push(Bodies.circle(px + offset, py, 18, { 
+                                isStatic: true, restitution: 0.7, friction: 0, label: 'pin'
                             }));
                         }
+                        rows++;
                     }
-                    currentY += 600;
+                    currentY += 1400;
+                    
+                } else if (type === 2) {
+                    // 테마 3: 안전 보장 거대 육각형(Hexagon) 스피너
+                    // 십자가처럼 좁은 구석이 없어 끼이지 않음
+                    let hexagon = Bodies.polygon(MAP_WIDTH/2, currentY + 300, 6, 250, { 
+                        isStatic: true, restitution: 0.8, friction: 0, label: 'hexagon',
+                        plugin: { type: 'spinner', speed: (Math.random() > 0.5 ? 0.05 : -0.05) } 
+                    });
+                    elements.push(hexagon); dynamicObstacles.push(hexagon);
+                    
+                    // 육각형 양옆에 튕겨내는 마젠타 범퍼 추가
+                    elements.push(Bodies.circle(200, currentY + 300, 45, { isStatic: true, restitution: 1.5, friction: 0, label: 'bumper' }));
+                    elements.push(Bodies.circle(MAP_WIDTH - 200, currentY + 300, 45, { isStatic: true, restitution: 1.5, friction: 0, label: 'bumper' }));
+                    
+                    currentY += 800;
                     
                 } else {
-                    // 3. 거대 스피너 구역 (주변 벽 완전 제거)
-                    // 스피너 주변에 갇힐 공간을 만들 벽을 일체 두지 않음
-                    let p1 = Bodies.rectangle(MAP_WIDTH/2, currentY + 200, 600, 50);
-                    let spinner = Body.create({ 
-                        parts: [p1], isStatic: true, restitution: 0.8, friction: 0,
-                        plugin: { type: 'spinner', speed: (Math.random() > 0.5 ? 0.08 : -0.08) } 
-                    });
-                    elements.push(spinner); dynamicObstacles.push(spinner);
+                    // 테마 4: 지그재그 슬로프 & 슬라이더 구간
+                    let isLeft = Math.random() > 0.5;
+                    let x = isLeft ? 300 : MAP_WIDTH - 300;
+                    let angle = isLeft ? 0.35 : -0.35; 
                     
-                    currentY += 700;
+                    elements.push(Bodies.rectangle(x, currentY, 1100, 40, { 
+                        isStatic: true, angle: angle, friction: 0, restitution: 0.4, label: 'wall', chamfer: {radius: 20} 
+                    }));
+                    
+                    // 빈 쪽에 튕기는 범퍼를 배치하여 재미 추가
+                    let bumperX = isLeft ? MAP_WIDTH - 300 : 300;
+                    elements.push(Bodies.circle(bumperX, currentY + 150, 40, { isStatic: true, restitution: 1.5, friction: 0, label: 'bumper' }));
+                    
+                    // 그 아래에 움직이는 슬라이더 판
+                    let slider = Bodies.rectangle(MAP_WIDTH/2, currentY + 500, 400, 30, { 
+                        isStatic: true, restitution: 0.5, chamfer: {radius: 15}, friction: 0, label: 'slider',
+                        plugin: { type: 'slider', startX: MAP_WIDTH/2, range: 400, speed: 0.04, offset: 0 } 
+                    });
+                    elements.push(slider); dynamicObstacles.push(slider);
+                    
+                    currentY += 800;
                 }
+                sectionIndex++;
             }
 
-            // 하단 결승선 가이드 핀
+            // 하단 결승선 칸막이
             for (let i = 1; i < 10; i++) {
                 elements.push(Bodies.rectangle(i * (MAP_WIDTH / 10), MAP_HEIGHT - 200, 20, 600, { isStatic: true, restitution: 0.5, label: 'wall', friction: 0 }));
             }
@@ -339,7 +373,7 @@
         }
 
         function updateLogic() {
-            // [핵심 로직] 러버밴딩 (고무줄) 효과 적용 - 박진감 넘치는 1~8등 추격전 유도
+            // [핵심 로직] 러버밴딩 (고무줄) 효과 적용 - 1등부터 꼴등까지 박진감 넘치게 유지
             let activeMarbles = marbles.filter(m => !m.plugin.finished);
             if (activeMarbles.length > 1) {
                 let leaderY = Math.max(...activeMarbles.map(m => m.position.y));
@@ -351,16 +385,19 @@
                         // relativePos: 1에 가까울수록 선두, 0에 가까울수록 후미
                         let relativePos = (m.position.y - lastY) / spread;
                         
-                        // 1등은 공기 저항 0.025 (떨어지는 속도 감소), 꼴등은 0.002 (빠르게 추격)
-                        m.frictionAir = 0.002 + (relativePos * 0.023); 
+                        // 선두는 공기 저항이 커져서 느려지고, 꼴등은 저항이 거의 없어 광속으로 추격
+                        m.frictionAir = 0.002 + (relativePos * 0.025); 
                     });
                 }
             }
 
-            // 움직이는 장애물 업데이트
+            // 움직이는 장애물 회전/이동 업데이트
             dynamicObstacles.forEach(obs => {
                 if (obs.plugin.type === 'spinner') {
                     Body.setAngle(obs, obs.angle + obs.plugin.speed);
+                } else if (obs.plugin.type === 'slider') {
+                    let newX = obs.plugin.startX + Math.sin(frameCounter * obs.plugin.speed + obs.plugin.offset) * obs.plugin.range;
+                    Body.setPosition(obs, { x: newX, y: obs.position.y });
                 }
             });
         }
@@ -372,15 +409,16 @@
         function render() {
             frameCounter++;
             
+            // 네온풍 그라데이션 배경
             let bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
             bgGradient.addColorStop(0, '#04040a');
-            bgGradient.addColorStop(1, '#0a0a18');
+            bgGradient.addColorStop(1, '#110a22');
             ctx.fillStyle = bgGradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             let viewHeightInWorld = canvas.height / cameraZoom;
             
-            // 카메라 추적 로직: 2초 미조작 시 후미 그룹(꼴등)을 보여줌
+            // 2초 미조작 시 꼴등(후미 그룹) 추적 로직 유지
             if (!isDragging && Date.now() - lastInteractionTime > 2000 && marbles.length > 0) {
                 let lastPlaceY = Infinity;
                 marbles.forEach(m => { if (!m.plugin.finished && m.position.y < lastPlaceY) lastPlaceY = m.position.y; });
@@ -398,11 +436,12 @@
                 if (cameraY < -1000) cameraY = -1000;
             }
 
-            ctx.strokeStyle = 'rgba(0, 255, 255, 0.03)';
+            // 시각적 공간감을 주는 배경 그리드 망
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)';
             ctx.lineWidth = 1;
-            let gridY = (cameraY * cameraZoom) % 80;
-            for(let i = 0; i < canvas.height + 80; i += 80) { ctx.beginPath(); ctx.moveTo(0, i - gridY); ctx.lineTo(canvas.width, i - gridY); ctx.stroke(); }
-            for(let i = 0; i < canvas.width; i += 80) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke(); }
+            let gridY = (cameraY * cameraZoom) % 100;
+            for(let i = 0; i < canvas.height + 100; i += 100) { ctx.beginPath(); ctx.moveTo(0, i - gridY); ctx.lineTo(canvas.width, i - gridY); ctx.stroke(); }
+            for(let i = 0; i < canvas.width; i += 100) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke(); }
 
             const viewTop = cameraY - 300, viewBottom = cameraY + viewHeightInWorld + 300;
 
@@ -411,7 +450,7 @@
             ctx.scale(cameraZoom, cameraZoom); 
             ctx.translate(-MAP_WIDTH / 2, -cameraY);
 
-            // 벽 및 다이나믹 장애물 렌더링
+            // 일반 벽 및 장애물 (Slider, Hexagon 등) 렌더링
             ctx.lineWidth = 2;
             world.bodies.forEach(b => {
                 if(b.bounds.max.y < viewTop || b.bounds.min.y > viewBottom || b.label==='marble' || b.label==='bumper' || b.label==='pin') return;
@@ -424,41 +463,59 @@
                     ctx.lineTo(p.vertices[0].x, p.vertices[0].y); 
                 });
                 
-                if (b.plugin && b.plugin.type) {
-                    ctx.fillStyle = 'rgba(255, 50, 150, 0.2)'; ctx.strokeStyle = 'rgba(255, 50, 150, 0.6)';
+                if (b.label === 'hexagon') {
+                    // 거대 육각형 스피너 (네온 오렌지 글로우)
+                    ctx.fillStyle = 'rgba(255, 165, 0, 0.15)'; 
+                    ctx.strokeStyle = '#ffa500';
+                    ctx.shadowBlur = 20; ctx.shadowColor = '#ffa500';
+                } else if (b.label === 'slider') {
+                    // 슬라이더 (네온 핑크 글로우)
+                    ctx.fillStyle = 'rgba(255, 0, 255, 0.15)'; 
+                    ctx.strokeStyle = '#ff00ff';
                 } else {
-                    ctx.fillStyle = 'rgba(0, 220, 255, 0.1)'; ctx.strokeStyle = 'rgba(0, 220, 255, 0.5)';
+                    // 일반 벽 (네온 시안)
+                    ctx.fillStyle = 'rgba(0, 240, 255, 0.08)'; 
+                    ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
                 }
                 ctx.fill(); ctx.stroke();
+                ctx.shadowBlur = 0; // 초기화
             });
 
-            // 핀볼 & 범퍼 렌더링
+            // 핀볼(Pin) & 범퍼 렌더링 (아케이드 감성 글로우 효과)
             let pulse = Math.abs(Math.sin(frameCounter * 0.1)) * 5;
             world.bodies.forEach(b => { 
                 if((b.label==='bumper' || b.label==='pin') && b.position.y > viewTop && b.position.y < viewBottom) { 
                     ctx.beginPath();
                     
                     if(b.label==='bumper') {
+                        // 튕겨내는 범퍼 (마젠타 펄스)
                         ctx.arc(b.position.x, b.position.y, b.circleRadius + pulse, 0, 2*Math.PI); 
                         ctx.fillStyle = 'rgba(255, 0, 170, 0.2)'; ctx.fill();
+                        
                         ctx.beginPath();
                         ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, 2*Math.PI); 
-                        ctx.fillStyle = 'rgba(255, 0, 170, 0.5)'; ctx.fill();
-                        ctx.strokeStyle = '#ff00aa'; ctx.lineWidth = 3; ctx.stroke();
+                        ctx.fillStyle = '#ff00aa'; 
+                        ctx.shadowBlur = 15; ctx.shadowColor = '#ff00aa'; 
+                        ctx.fill(); ctx.shadowBlur = 0;
                     } else {
+                        // Plinko 핀 (야광 민트/옐로우)
                         ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, 2*Math.PI); 
-                        ctx.fillStyle = 'rgba(255, 255, 0, 0.3)'; ctx.fill();
+                        ctx.fillStyle = '#fff'; 
+                        ctx.shadowBlur = 12; ctx.shadowColor = '#00ffcc'; 
+                        ctx.fill(); ctx.shadowBlur = 0;
                     }
                 }
             });
 
-            // 결승선
+            // 결승선 렌더링
             if (FINISH_LINE > viewTop && FINISH_LINE < viewBottom) {
                 ctx.beginPath(); ctx.moveTo(0, FINISH_LINE); ctx.lineTo(MAP_WIDTH, FINISH_LINE); 
-                ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 6; ctx.setLineDash([20, 15]); ctx.stroke(); ctx.setLineDash([]);
+                ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 6; ctx.setLineDash([20, 15]); 
+                ctx.shadowBlur = 15; ctx.shadowColor = '#ffff00';
+                ctx.stroke(); ctx.setLineDash([]); ctx.shadowBlur = 0;
             }
 
-            // 파티클
+            // 부딪힐 때 나오는 파티클 렌더링
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03;
                 if (p.life <= 0) { particles.splice(i, 1); continue; }
@@ -471,7 +528,7 @@
 
             if (frameCounter % 15 === 0 && marbles.length > 0) updateLeaderboard();
 
-            // 공 렌더링
+            // 공 렌더링 및 결승선 통과 처리
             marbles.forEach(m => {
                 let p = m.plugin;
                 if (!p.finished && m.position.y > FINISH_LINE) {
