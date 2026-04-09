@@ -157,8 +157,8 @@ textarea::placeholder { color: #C4B5B5; }
   color: var(--muted);
 }
 
-/* ── 고양이 그리드 ── */
-#cat-grid {
+/* ── 동물 그리드 ── */
+#animal-grid {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -167,8 +167,8 @@ textarea::placeholder { color: #C4B5B5; }
   margin: 0 auto 40px;
 }
 
-/* ── 고양이 카드 ── */
-.cat-card {
+/* ── 동물 카드 ── */
+.animal-card {
   background: var(--card);
   border: 3px solid #F0E6E6;
   border-radius: 25px;
@@ -180,9 +180,9 @@ textarea::placeholder { color: #C4B5B5; }
   box-shadow: 0 8px 16px rgba(0,0,0,0.04);
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.cat-card.finished  { border-color: #06D6A0; transform: scale(0.95); opacity: 0.8; }
-.cat-card.winner    { border-color: #FF6B8B!important; transform: scale(1.05); box-shadow: 0 10px 30px rgba(255, 107, 139, 0.3)!important; z-index: 2;}
-.cat-card.distracted{ border-color: var(--yellow); box-shadow: 0 10px 20px rgba(255, 209, 102, 0.3); }
+.animal-card.finished  { border-color: #06D6A0; transform: scale(0.95); opacity: 0.8; }
+.animal-card.winner    { border-color: #FF6B8B!important; transform: scale(1.05); box-shadow: 0 10px 30px rgba(255, 107, 139, 0.3)!important; z-index: 2;}
+.animal-card.distracted{ border-color: var(--yellow); box-shadow: 0 10px 20px rgba(255, 209, 102, 0.3); }
 
 /* ── 순위 뱃지 ── */
 .rank-badge {
@@ -212,16 +212,16 @@ textarea::placeholder { color: #C4B5B5; }
   white-space: nowrap;
 }
 
-/* ── 고양이 이름 ── */
-.cat-name {
+/* ── 동물 이름 ── */
+.animal-name {
   font-size: 1.4rem;
   color: var(--text);
   text-align: center;
   word-break: break-all;
 }
 
-/* ── SVG 고양이 컨테이너 ── */
-.cat-svg-wrap {
+/* ── SVG 동물 컨테이너 ── */
+.animal-svg-wrap {
   width: 110px; height: 110px;
   position: relative;
   display: flex;
@@ -230,7 +230,7 @@ textarea::placeholder { color: #C4B5B5; }
 }
 
 /* ── 상태 텍스트 ── */
-.cat-state-label {
+.animal-state-label {
   font-size: 1.1rem;
   color: #FF9EBB;
   text-align: center;
@@ -284,7 +284,7 @@ textarea::placeholder { color: #C4B5B5; }
   z-index: 4;
   backdrop-filter: blur(2px);
 }
-.cat-card.distracted .distract-overlay { display: flex; }
+.animal-card.distracted .distract-overlay { display: flex; }
 .distract-msg {
   font-size: 1.3rem;
   color: #FFF;
@@ -423,7 +423,7 @@ textarea::placeholder { color: #C4B5B5; }
 }
 
 @media (max-width: 480px) {
-  .cat-card { width: 160px; padding: 15px 10px; }
+  .animal-card { width: 160px; padding: 15px 10px; }
   .setup-panel { padding: 25px 20px; }
   .cute-title { font-size: 2rem; }
   .result-box { padding: 30px 20px; }
@@ -438,10 +438,10 @@ textarea::placeholder { color: #C4B5B5; }
   <div class="cute-subtitle">꼴찌 당첨자는 누구?</div>
 
   <div class="setup-panel">
-    <label class="setup-label" for="cat-input">
+    <label class="setup-label" for="animal-input">
       🐾 참가자 이름 입력 <span style="color:#C4B5B5; font-size:0.9rem;">(쉼표 또는 줄바꿈 구분)</span>
     </label>
-    <textarea id="cat-input" placeholder="예: 인절미, 찹쌀떡, 모찌, 츄르, 포도, 먼지, 장수익"></textarea>
+    <textarea id="animal-input" placeholder="예: 인절미, 찹쌀떡, 모찌, 장수익, 박예지"></textarea>
     <button class="btn-cute" id="start-btn">경기 시작하기 🚀</button>
   </div>
 </div>
@@ -451,7 +451,7 @@ textarea::placeholder { color: #C4B5B5; }
     <div class="game-title">🍚 대회 진행중... 뇸뇸뇸</div>
     <div class="game-subtitle" id="game-info">-- 마리 참가 • 하위 -- 마리 벌칙</div>
   </div>
-  <div id="cat-grid"></div>
+  <div id="animal-grid"></div>
 </div>
 
 <div id="result-screen">
@@ -478,32 +478,44 @@ textarea::placeholder { color: #C4B5B5; }
 
 <script>
 window.addEventListener('DOMContentLoaded', () => {
-  const savedNames = localStorage.getItem('cuteCatNames');
+  const savedNames = localStorage.getItem('cuteAnimalNames');
   if (savedNames) {
-    document.getElementById('cat-input').value = savedNames;
+    document.getElementById('animal-input').value = savedNames;
   }
 });
 
-const CAT_COLORS = {
-  orange: { body: '#FCA311', belly: '#FFE5B4', ear: '#E85D04', stroke: '#D68C00' },
-  gray:   { body: '#A0AAB2', belly: '#E2E8F0', ear: '#64748B', stroke: '#8795A1' },
-  black:  { body: '#2B2D42', belly: '#8D99AE', ear: '#1A1B28', stroke: '#1D1E2C' },
-  white:  { body: '#FFFFFF', belly: '#FFF5F7', ear: '#FFB3C6', stroke: '#E2E8F0' },
-  calico: { body: '#FFF0D4', belly: '#FFFFFF', ear: '#FCA311', stroke: '#E5D8BF', spots: true },
-  brown:  { body: '#9C6644', belly: '#E6CCB2', ear: '#7F4F24', stroke: '#855537' }
+// 동물별 색상 팔레트 정의 (어울리는 색으로 세트 구성)
+const ANIMAL_PALETTES = {
+  cat: {
+    orange: { body: '#FCA311', belly: '#FFE5B4', ear: '#E85D04', stroke: '#D68C00' },
+    gray:   { body: '#A0AAB2', belly: '#E2E8F0', ear: '#64748B', stroke: '#8795A1' },
+    black:  { body: '#2B2D42', belly: '#8D99AE', ear: '#1A1B28', stroke: '#1D1E2C' },
+    white:  { body: '#FFFFFF', belly: '#FFF5F7', ear: '#FFB3C6', stroke: '#E2E8F0' },
+    calico: { body: '#FFF0D4', belly: '#FFFFFF', ear: '#FCA311', stroke: '#E5D8BF', spots: true },
+    brown:  { body: '#9C6644', belly: '#E6CCB2', ear: '#7F4F24', stroke: '#855537' }
+  },
+  dog: {
+    // 강아지에게 어울리는 파스텔 톤 골든 세트
+    golden: { body: '#F3D17A', belly: '#FFF7E6', ear: '#D4A757', stroke: '#C29548' },
+  },
+  hamster: {
+    // 햄스터에게 어울리는 크림파스텔 세트
+    cream:  { body: '#E8CFC0', belly: '#FFFFFF', ear: '#FFB3C6', stroke: '#B89A89' },
+  }
 };
-const COLOR_KEYS = Object.keys(CAT_COLORS);
+const CAT_COLOR_KEYS = Object.keys(ANIMAL_PALETTES.cat);
 
-// 강아지와 고양이 분기를 처리하는 통합 렌더링 함수
-function getAnimalSVG(isDog, colorKey, pose, bobPhase = 0) {
-  const c = CAT_COLORS[colorKey] || CAT_COLORS.orange;
-  const bob = Math.sin(bobPhase) * 6; 
-  const headY = pose === 'eat' ? 12 + bob : (pose === 'sleep' ? 18 : 0);
-  const headX = pose === 'idle' ? Math.sin(bobPhase)*2 : 0;
+// 통합 동물 SVG 렌더링 함수 (나중에 토끼, 햄스터 등 추가 시 switch 문에 케이스 추가)
+function getAnimalSVG(animalType, colorKey, pose, bobPhase = 0) {
   const isSleep = pose === 'sleep';
   const isEat = pose === 'eat';
   const isGroom = pose === 'groom';
-  
+
+  // 스윙 폭 (공통)
+  const bob = Math.sin(bobPhase) * 6; 
+  const headY = isEat ? 12 + bob : (isSleep ? 18 : 0);
+  const headX = pose === 'idle' ? Math.sin(bobPhase)*2 : 0;
+
   // 공통 눈
   const eyes = isSleep || isEat
     ? `<path d="M30,55 Q35,60 40,55" stroke="#4A4E69" stroke-width="3" fill="none" stroke-linecap="round"/>
@@ -511,60 +523,50 @@ function getAnimalSVG(isDog, colorKey, pose, bobPhase = 0) {
     : `<circle cx="35" cy="55" r="4.5" fill="#4A4E69"/>
        <circle cx="65" cy="55" r="4.5" fill="#4A4E69"/>`;
 
-  // 귀, 얼굴형, 수염, 꼬리 분기 처리
-  let faceDetails = '';
-  let ears = '';
-  let tail = '';
-
-  if (isDog) {
-    // [강아지 형태]
-    // 살랑거리는 꼬리
-    const wag = isEat ? Math.sin(bobPhase * 2) * 10 : 0;
-    tail = `<path d="M 80,85 Q 100,${85 + wag} 90,${70 + wag}" fill="none" stroke="${c.body}" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>`;
-    
-    // 축 처진 귀
-    ears = `
-      <ellipse cx="22" cy="45" rx="10" ry="20" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" transform="rotate(25 22 45)"/>
-      <ellipse cx="78" cy="45" rx="10" ry="20" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" transform="rotate(-25 78 45)"/>
-    `;
-    
-    // 큰 코와 입
-    faceDetails = `
-      <ellipse cx="50" cy="64" rx="22" ry="16" fill="${c.belly}"/>
-      <ellipse cx="50" cy="56" rx="8" ry="6" fill="#2B2D42"/>
-      ${isEat 
-        ? `<ellipse cx="50" cy="68" rx="6" ry="8" fill="#FF8FAB"/>` 
-        : `<path d="M50,62 L50,68 Q45,72 40,68 M50,68 Q55,72 60,68" stroke="#4A4E69" stroke-width="2.5" fill="none" stroke-linecap="round"/>`}
-    `;
-  } else {
-    // [고양이 형태]
-    tail = `<path d="M 80,85 Q 95,85 95,65 Q 95,50 85,60" fill="none" stroke="${c.body}" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>`;
-    
-    ears = `
-      <polygon points="20,45 25,18 45,35" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" stroke-linejoin="round"/>
-      <polygon points="25,40 28,25 40,35" fill="${c.ear}"/>
-      <polygon points="80,45 75,18 55,35" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" stroke-linejoin="round"/>
-      <polygon points="75,40 72,25 60,35" fill="${c.ear}"/>
-    `;
-    
-    faceDetails = `
-      <ellipse cx="50" cy="62" rx="18" ry="12" fill="${c.belly}"/>
-      <polygon points="47,60 53,60 50,63" fill="#FF8FAB"/>
-      ${isEat 
-        ? `<ellipse cx="50" cy="65" rx="5" ry="7" fill="#FF8FAB"/>` 
-        : `<path d="M45,64 Q50,68 55,64" stroke="#4A4E69" stroke-width="2.5" fill="none" stroke-linecap="round"/>`}
-      <path d="M 10,55 L 25,58 M 8,62 L 25,62 M 90,55 L 75,58 M 92,62 L 75,62" stroke="#A0AAB2" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.6"/>
-    `;
+  // 동물 종류별 SVG 가져오기
+  let animalSVG = '';
+  switch(animalType) {
+    case 'dog':
+      animalSVG = getDogSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes);
+      break;
+    case 'hamster':
+      animalSVG = getHamsterSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes);
+      break;
+    default: // cat
+      animalSVG = getCatSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes);
   }
+  return animalSVG;
+}
 
-  // 앞발
+function getCatSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes) {
+  const c = ANIMAL_PALETTES.cat[colorKey] || ANIMAL_PALETTES.cat.orange;
+  const isEat = pose === 'eat';
+  const isGroom = pose === 'groom';
+  
+  const tail = `<path d="M 80,85 Q 95,85 95,65 Q 95,50 85,60" fill="none" stroke="${c.body}" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>`;
+  
+  const ears = `
+    <polygon points="20,45 25,18 45,35" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" stroke-linejoin="round"/>
+    <polygon points="25,40 28,25 40,35" fill="${c.ear}"/>
+    <polygon points="80,45 75,18 55,35" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" stroke-linejoin="round"/>
+    <polygon points="75,40 72,25 60,35" fill="${c.ear}"/>
+  `;
+  
+  const faceDetails = `
+    <ellipse cx="50" cy="62" rx="18" ry="12" fill="${c.belly}"/>
+    <polygon points="47,60 53,60 50,63" fill="#FF8FAB"/>
+    ${isEat 
+      ? `<ellipse cx="50" cy="65" rx="5" ry="7" fill="#FF8FAB"/>` 
+      : `<path d="M45,64 Q50,68 55,64" stroke="#4A4E69" stroke-width="2.5" fill="none" stroke-linecap="round"/>`}
+    <path d="M 10,55 L 25,58 M 8,62 L 25,62 M 90,55 L 75,58 M 92,62 L 75,62" stroke="#A0AAB2" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.6"/>
+  `;
+  
   const paws = isGroom
     ? `<ellipse cx="35" cy="85" rx="10" ry="8" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>
        <ellipse cx="60" cy="55" rx="10" ry="14" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" transform="rotate(-30 60 55)"/>`
     : `<ellipse cx="35" cy="88" rx="11" ry="7" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>
        <ellipse cx="65" cy="88" rx="11" ry="7" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>`;
 
-  // 무늬
   const spots = c.spots ? `<path d="M 20,40 Q 40,30 30,60 Z" fill="#2B2D42"/><path d="M 70,35 Q 90,45 80,65 Z" fill="#FCA311"/>` : '';
 
   return `
@@ -576,6 +578,98 @@ function getAnimalSVG(isDog, colorKey, pose, bobPhase = 0) {
         ${ears}
         <ellipse cx="50" cy="55" rx="38" ry="28" fill="${c.body}" stroke="${c.stroke}" stroke-width="3"/>
         ${spots}
+        ${faceDetails}
+        ${eyes}
+      </g>
+      ${paws}
+    </svg>
+  `;
+}
+
+function getDogSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes) {
+  const c = ANIMAL_PALETTES.dog.golden; // 강아지는 전용 색상 고정
+  const isEat = pose === 'eat';
+  const isGroom = pose === 'groom';
+  
+  // 살랑거리는 꼬리
+  const wag = isEat ? Math.sin(bobPhase * 2) * 10 : 0;
+  const tail = `<path d="M 80,85 Q 100,${85 + wag} 90,${70 + wag}" fill="none" stroke="${c.body}" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>`;
+  
+  // 축 처진 귀
+  const ears = `
+    <ellipse cx="22" cy="45" rx="10" ry="20" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" transform="rotate(25 22 45)"/>
+    <ellipse cx="78" cy="45" rx="10" ry="20" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" transform="rotate(-25 78 45)"/>
+  `;
+  
+  // 큰 코와 입
+  const faceDetails = `
+    <ellipse cx="50" cy="64" rx="22" ry="16" fill="${c.belly}"/>
+    <ellipse cx="50" cy="56" rx="8" ry="6" fill="#2B2D42"/>
+    ${isEat 
+      ? `<ellipse cx="50" cy="68" rx="6" ry="8" fill="#FF8FAB"/>` 
+      : `<path d="M50,62 L50,68 Q45,72 40,68 M50,68 Q55,72 60,68" stroke="#4A4E69" stroke-width="2.5" fill="none" stroke-linecap="round"/>`}
+  `;
+
+  // 앞발
+  const paws = isGroom
+    ? `<ellipse cx="35" cy="85" rx="10" ry="8" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>
+       <ellipse cx="60" cy="55" rx="10" ry="14" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" transform="rotate(-30 60 55)"/>`
+    : `<ellipse cx="35" cy="88" rx="11" ry="7" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>
+       <ellipse cx="65" cy="88" rx="11" ry="7" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>`;
+
+  return `
+    <svg viewBox="0 0 100 100" width="100%" height="100%">
+      ${tail}
+      <path d="M 20,90 C 15,55 85,55 80,90 Z" fill="${c.body}" stroke="${c.stroke}" stroke-width="3"/>
+      <path d="M 35,90 C 35,70 65,70 65,90 Z" fill="${c.belly}"/>
+      <g transform="translate(${headX}, ${headY})">
+        ${ears}
+        <ellipse cx="50" cy="55" rx="38" ry="28" fill="${c.body}" stroke="${c.stroke}" stroke-width="3"/>
+        ${faceDetails}
+        ${eyes}
+      </g>
+      ${paws}
+    </svg>
+  `;
+}
+
+function getHamsterSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes) {
+  const c = ANIMAL_PALETTES.hamster.cream; // 햄스터는 전용 색상 고정
+  const isEat = pose === 'eat';
+  const isGroom = pose === 'groom';
+  
+  // 작은 꼬리
+  const tail = `<circle cx="80" cy="85" r="5" fill="${c.body}"/>`;
+  
+  // 동그랗고 작은 귀
+  const ears = `
+    <circle cx="25" cy="35" r="10" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>
+    <circle cx="25" cy="35" r="6" fill="${c.ear}"/>
+    <circle cx="75" cy="35" r="10" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>
+    <circle cx="75" cy="35" r="6" fill="${c.ear}"/>
+  `;
+  
+  // 통통한 볼과 작은 앞니
+  const faceDetails = `
+    <ellipse cx="50" cy="62" rx="20" ry="14" fill="${c.belly}"/>
+    <polygon points="48,64 52,64 50,67" fill="#2B2D42"/>
+    ${isEat 
+      ? `<ellipse cx="50" cy="68" rx="7" ry="9" fill="#FF8FAB"/>` 
+      : `<path d="M48,70 L48,76 M52,70 L52,76" stroke="#4A4E69" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+         <path d="M45,69 Q50,73 55,69" stroke="#4A4E69" stroke-width="2.5" fill="none" stroke-linecap="round"/>`}
+  `;
+
+  // 아주 작은 앞발
+  const paws = `<ellipse cx="40" cy="88" rx="6" ry="4" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>
+                <ellipse cx="60" cy="88" rx="6" ry="4" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>`;
+
+  return `
+    <svg viewBox="0 0 100 100" width="100%" height="100%">
+      ${tail}
+      <path d="M 25,90 C 20,60 80,60 75,90 Z" fill="${c.body}" stroke="${c.stroke}" stroke-width="3"/>
+      <g transform="translate(${headX}, ${headY})">
+        ${ears}
+        <ellipse cx="50" cy="55" rx="35" ry="26" fill="${c.body}" stroke="${c.stroke}" stroke-width="3"/>
         ${faceDetails}
         ${eyes}
       </g>
@@ -601,7 +695,7 @@ const DISTRACT_EVENTS = [
   { label:'갑자기 가렵다',  pose:'groom', duration: [1200, 2160] },
 ];
 
-let cats = [];
+let animals = [];
 let finishOrder = [];
 let gameRunning = false;
 let rafId = null;
@@ -613,16 +707,16 @@ const pick = arr => arr[randInt(0, arr.length - 1)];
 const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
 
 document.getElementById('start-btn').addEventListener('click', () => {
-  const raw = document.getElementById('cat-input').value.trim();
+  const raw = document.getElementById('animal-input').value.trim();
   if (!raw) { alert('이름을 입력해주세요!'); return; }
-  localStorage.setItem('cuteCatNames', raw);
+  localStorage.setItem('cuteAnimalNames', raw);
   const names = raw.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
   if (names.length < 2) { alert('최소 2마리 이상 필요해요!'); return; }
   initGame(names);
 });
 
 function initGame(names) {
-  cats = []; finishOrder = []; gameRunning = true;
+  animals = []; finishOrder = []; gameRunning = true;
   if (rafId) cancelAnimationFrame(rafId);
   document.getElementById('title-screen').style.display = 'none';
   document.getElementById('game-screen').style.display = 'block';
@@ -631,29 +725,35 @@ function initGame(names) {
   const loserCount = Math.floor((names.length - 1) / 4) + 1;
   document.getElementById('game-info').innerText = `${names.length}마리 참가 • 하위 ${loserCount}마리 벌칙`;
 
-  const grid = document.getElementById('cat-grid');
+  const grid = document.getElementById('animal-grid');
   grid.innerHTML = '';
 
-  const usedColors = shuffle(COLOR_KEYS);
+  const catColors = shuffle(CAT_COLOR_KEYS);
   const traitPool = shuffle([...TRAITS, ...TRAITS, ...TRAITS]).slice(0, names.length);
 
   names.forEach((name, i) => {
     const trait = traitPool[i % traitPool.length];
-    const colorKey = usedColors[i % usedColors.length];
     
-    // 🔥 "장수익" 여부 체크
+    // 이스터 에그 체크
     const isDog = name === '장수익';
+    const isHamster = name === '박예지';
+    const animalType = isDog ? 'dog' : (isHamster ? 'hamster' : 'cat');
+    
+    // 색상 결정: 전용 팔레트가 있으면 전용, 없으면 랜덤 고양이 색상
+    let colorKey = 'golden'; // dog default
+    if (isHamster) colorKey = 'cream';
+    if (!isDog && !isHamster) colorKey = catColors[i % catColors.length];
     
     const baseTime = rand(10, 11.5); 
     const eatTime = baseTime / trait.speedMult + rand(-0.5, 0.5);
 
     const card = document.createElement('div');
-    card.className = 'cat-card';
+    card.className = 'animal-card';
     card.innerHTML = `
       <div class="trait-badge">${trait.label}</div>
-      <div class="cat-name">${name}</div>
-      <div class="cat-svg-wrap" id="svg-wrap-${i}"></div>
-      <div class="cat-state-label" id="state-${i}">뇸뇸뇸 🍚</div>
+      <div class="animal-name">${name}</div>
+      <div class="animal-svg-wrap" id="svg-wrap-${i}"></div>
+      <div class="animal-state-label" id="state-${i}">뇸뇸뇸 🍚</div>
       <div class="bowl-wrap">
         <div class="bowl-label"><span>🍚 밥그릇</span><span id="pct-${i}">100%</span></div>
         <div class="bowl-track"><div class="bowl-bar" id="bar-${i}" style="width:100%"></div></div>
@@ -662,9 +762,8 @@ function initGame(names) {
     `;
     grid.appendChild(card);
 
-    cats.push({
-      i, name, trait, colorKey, eatTime,
-      isDog, // 상태에 강아지 여부 저장
+    animals.push({
+      i, name, trait, colorKey, eatTime, animalType,
       eaten: 0, finished: false, distracted: false,
       distractTimeLeft: 0, distractEvent: null,
       nextDistractAt: rand(1500, 3500),
@@ -690,7 +789,7 @@ function gameLoop(now) {
   const elapsed = now - startTime;
   let allDone = true;
 
-  cats.forEach(cat => {
+  animals.forEach(cat => {
     if (cat.finished) return;
     allDone = false;
 
@@ -703,7 +802,8 @@ function gameLoop(now) {
         cat.nextDistractAt = elapsed + rand(2000, 5000);
       } else {
         cat.bobPhase += dt * 3;
-        cat.svgWrap.innerHTML = getAnimalSVG(cat.isDog, cat.colorKey, cat.distractEvent.pose, cat.bobPhase);
+        // 통합 getAnimalSVG 함수 호출
+        cat.svgWrap.innerHTML = getAnimalSVG(cat.animalType, cat.colorKey, cat.distractEvent.pose, cat.bobPhase);
         return;
       }
     }
@@ -712,11 +812,17 @@ function gameLoop(now) {
       if (Math.random() < cat.trait.distractChance) {
         cat.distracted = true;
         const ev = pick(DISTRACT_EVENTS);
-        cat.distractEvent = ev;
+        
+        // 동물별 어울리는 대사 설정
+        let label = ev.label;
+        if (cat.animalType === 'dog' && label === '냥냥펀치! ✊') label = '멍멍펀치! ✊';
+        if (cat.animalType === 'hamster' && label === '그루밍 촵촵🐾') label = '볼따구 빵빵 🐾';
+
+        cat.distractEvent = {...ev, label}; // 복사하여 대사 수정
         cat.distractTimeLeft = rand(...ev.duration);
         cat.card.classList.add('distracted');
-        cat.dmsgEl.innerText = ev.label;
-        cat.stateEl.innerText = ev.label;
+        cat.dmsgEl.innerText = label;
+        cat.stateEl.innerText = label;
       } else {
         cat.nextDistractAt = elapsed + rand(1000, 3000);
       }
@@ -727,7 +833,8 @@ function gameLoop(now) {
     cat.barEl.style.width = ((1 - cat.eaten) * 100).toFixed(1) + '%';
     cat.pctEl.innerText = Math.ceil((1 - cat.eaten) * 100) + '%';
     cat.bobPhase += dt * (cat.trait.speedMult > 1.05 ? 18 : cat.trait.speedMult < 0.95 ? 8 : 12);
-    cat.svgWrap.innerHTML = getAnimalSVG(cat.isDog, cat.colorKey, 'eat', cat.bobPhase);
+    // 통합 getAnimalSVG 함수 호출
+    cat.svgWrap.innerHTML = getAnimalSVG(cat.animalType, cat.colorKey, 'eat', cat.bobPhase);
 
     if (now - cat.lastParticleAt > rand(200, 500)) {
       spawnFoodParticle(cat.barEl);
@@ -738,8 +845,15 @@ function gameLoop(now) {
       cat.finished = true;
       finishOrder.push(cat.i);
       const rank = finishOrder.length;
-      cat.svgWrap.innerHTML = getAnimalSVG(cat.isDog, cat.colorKey, 'idle', 0);
-      cat.stateEl.innerText = cat.isDog ? '다 먹었다멍! 🐶' : '다 먹었다냥! 😻';
+      // 통합 getAnimalSVG 함수 호출
+      cat.svgWrap.innerHTML = getAnimalSVG(cat.animalType, cat.colorKey, 'idle', 0);
+      
+      // 동물별 완료 대사 설정
+      let finishMsg = '다 먹었다냥! 😻';
+      if (cat.animalType === 'dog') finishMsg = '다 먹었다멍! 🐶';
+      if (cat.animalType === 'hamster') finishMsg = '다 먹었다찍! 🐹';
+      
+      cat.stateEl.innerText = finishMsg;
       cat.barEl.style.width = '0%';
       cat.pctEl.innerText = '0%';
       cat.barEl.style.background = '#E2E8F0';
@@ -752,7 +866,7 @@ function gameLoop(now) {
     }
   });
 
-  if (allDone || finishOrder.length === cats.length) {
+  if (allDone || finishOrder.length === animals.length) {
     gameRunning = false;
     setTimeout(showResult, 800);
     return;
@@ -775,7 +889,7 @@ function spawnFoodParticle(el) {
 }
 
 function showResult() {
-  const n = cats.length;
+  const n = animals.length;
   const loserCount = Math.floor((n - 1) / 4) + 1;
   document.getElementById('result-desc').innerText = `총 ${n}마리 중 ${loserCount}마리 벌칙 당첨!`;
   
@@ -785,7 +899,7 @@ function showResult() {
   listPenalty.innerHTML = '';
 
   finishOrder.forEach((ci, index) => {
-    const cat = cats[ci];
+    const cat = animals[ci];
     const rank = index + 1;
     const isLoser = rank > (n - loserCount);
     
@@ -793,7 +907,7 @@ function showResult() {
     if (isLoser) {
       cat.card.classList.add('winner'); 
       cat.stateEl.innerText = '벌칙 당첨... ☕';
-      cat.svgWrap.innerHTML = getAnimalSVG(cat.isDog, cat.colorKey, 'sleep', 0);
+      cat.svgWrap.innerHTML = getAnimalSVG(cat.animalType, cat.colorKey, 'sleep', 0);
     }
     
     let rankIcon = `${rank}등`;
