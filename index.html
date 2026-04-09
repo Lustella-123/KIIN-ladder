@@ -484,7 +484,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// 동물별 색상 팔레트 정의 (어울리는 색으로 세트 구성)
+// 동물별 색상 팔레트 정의
 const ANIMAL_PALETTES = {
   cat: {
     orange: { body: '#FCA311', belly: '#FFE5B4', ear: '#E85D04', stroke: '#D68C00' },
@@ -495,17 +495,24 @@ const ANIMAL_PALETTES = {
     brown:  { body: '#9C6644', belly: '#E6CCB2', ear: '#7F4F24', stroke: '#855537' }
   },
   dog: {
-    // 강아지에게 어울리는 파스텔 톤 골든 세트
     golden: { body: '#F3D17A', belly: '#FFF7E6', ear: '#D4A757', stroke: '#C29548' },
   },
   hamster: {
-    // 햄스터에게 어울리는 크림파스텔 세트
     cream:  { body: '#E8CFC0', belly: '#FFFFFF', ear: '#FFB3C6', stroke: '#B89A89' },
   }
 };
 const CAT_COLOR_KEYS = Object.keys(ANIMAL_PALETTES.cat);
 
-// 통합 동물 SVG 렌더링 함수 (나중에 토끼, 햄스터 등 추가 시 switch 문에 케이스 추가)
+// 공통 밥그릇 SVG
+const foodBowlSVG = `
+  <g>
+    <path d="M 35,92 C 35,100 65,100 65,92 Z" fill="#FFB3C6" stroke="#FF8FAB" stroke-width="1.5"/>
+    <ellipse cx="50" cy="92" rx="15" ry="4" fill="#FFF5F7"/>
+    <path d="M 38,92 Q 50,82 62,92 Z" fill="#FFFBF0"/>
+  </g>
+`;
+
+// 통합 동물 SVG 렌더링 함수
 function getAnimalSVG(animalType, colorKey, pose, bobPhase = 0) {
   const isSleep = pose === 'sleep';
   const isEat = pose === 'eat';
@@ -523,7 +530,6 @@ function getAnimalSVG(animalType, colorKey, pose, bobPhase = 0) {
     : `<circle cx="35" cy="55" r="4.5" fill="#4A4E69"/>
        <circle cx="65" cy="55" r="4.5" fill="#4A4E69"/>`;
 
-  // 동물 종류별 SVG 가져오기
   let animalSVG = '';
   switch(animalType) {
     case 'dog':
@@ -582,26 +588,24 @@ function getCatSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes) {
         ${eyes}
       </g>
       ${paws}
+      ${foodBowlSVG}
     </svg>
   `;
 }
 
 function getDogSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes) {
-  const c = ANIMAL_PALETTES.dog.golden; // 강아지는 전용 색상 고정
+  const c = ANIMAL_PALETTES.dog.golden; 
   const isEat = pose === 'eat';
   const isGroom = pose === 'groom';
   
-  // 살랑거리는 꼬리
   const wag = isEat ? Math.sin(bobPhase * 2) * 10 : 0;
   const tail = `<path d="M 80,85 Q 100,${85 + wag} 90,${70 + wag}" fill="none" stroke="${c.body}" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>`;
   
-  // 축 처진 귀
   const ears = `
     <ellipse cx="22" cy="45" rx="10" ry="20" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" transform="rotate(25 22 45)"/>
     <ellipse cx="78" cy="45" rx="10" ry="20" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" transform="rotate(-25 78 45)"/>
   `;
   
-  // 큰 코와 입
   const faceDetails = `
     <ellipse cx="50" cy="64" rx="22" ry="16" fill="${c.belly}"/>
     <ellipse cx="50" cy="56" rx="8" ry="6" fill="#2B2D42"/>
@@ -610,7 +614,6 @@ function getDogSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes) {
       : `<path d="M50,62 L50,68 Q45,72 40,68 M50,68 Q55,72 60,68" stroke="#4A4E69" stroke-width="2.5" fill="none" stroke-linecap="round"/>`}
   `;
 
-  // 앞발
   const paws = isGroom
     ? `<ellipse cx="35" cy="85" rx="10" ry="8" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>
        <ellipse cx="60" cy="55" rx="10" ry="14" fill="${c.body}" stroke="${c.stroke}" stroke-width="2" transform="rotate(-30 60 55)"/>`
@@ -629,19 +632,18 @@ function getDogSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes) {
         ${eyes}
       </g>
       ${paws}
+      ${foodBowlSVG}
     </svg>
   `;
 }
 
 function getHamsterSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes) {
-  const c = ANIMAL_PALETTES.hamster.cream; // 햄스터는 전용 색상 고정
+  const c = ANIMAL_PALETTES.hamster.cream;
   const isEat = pose === 'eat';
   const isGroom = pose === 'groom';
   
-  // 작은 꼬리
   const tail = `<circle cx="80" cy="85" r="5" fill="${c.body}"/>`;
   
-  // 동그랗고 작은 귀
   const ears = `
     <circle cx="25" cy="35" r="10" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>
     <circle cx="25" cy="35" r="6" fill="${c.ear}"/>
@@ -649,7 +651,6 @@ function getHamsterSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes) {
     <circle cx="75" cy="35" r="6" fill="${c.ear}"/>
   `;
   
-  // 통통한 볼과 작은 앞니
   const faceDetails = `
     <ellipse cx="50" cy="62" rx="20" ry="14" fill="${c.belly}"/>
     <polygon points="48,64 52,64 50,67" fill="#2B2D42"/>
@@ -659,7 +660,6 @@ function getHamsterSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes) {
          <path d="M45,69 Q50,73 55,69" stroke="#4A4E69" stroke-width="2.5" fill="none" stroke-linecap="round"/>`}
   `;
 
-  // 아주 작은 앞발
   const paws = `<ellipse cx="40" cy="88" rx="6" ry="4" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>
                 <ellipse cx="60" cy="88" rx="6" ry="4" fill="${c.body}" stroke="${c.stroke}" stroke-width="2"/>`;
 
@@ -674,26 +674,44 @@ function getHamsterSVG(colorKey, pose, bobPhase, bob, headX, headY, eyes) {
         ${eyes}
       </g>
       ${paws}
+      ${foodBowlSVG}
     </svg>
   `;
 }
 
+// 기본 베이스 스탯 (확률/속도는 모두 동일하게 유지)
 const TRAITS = [
-  { id:'speedy',  label:'급식러', speedMult: 1.1,  distractChance: 0.04 },
-  { id:'lazy',    label:'미식가', speedMult: 0.9,  distractChance: 0.06 },
-  { id:'normal',  label:'보통냥', speedMult: 1.0,  distractChance: 0.08 },
-  { id:'anxious', label:'눈치냥', speedMult: 0.95, distractChance: 0.14 },
-  { id:'glutton', label:'흡입기', speedMult: 1.15, distractChance: 0.02 },
-  { id:'picky',   label:'편식냥', speedMult: 0.85, distractChance: 0.10 },
+  { id:'speedy',  speedMult: 1.1,  distractChance: 0.04 },
+  { id:'lazy',    speedMult: 0.9,  distractChance: 0.06 },
+  { id:'normal',  speedMult: 1.0,  distractChance: 0.08 },
+  { id:'anxious', speedMult: 0.95, distractChance: 0.14 },
+  { id:'glutton', speedMult: 1.15, distractChance: 0.02 },
+  { id:'picky',   speedMult: 0.85, distractChance: 0.10 },
 ];
 
+// 동물별 맞춤 뱃지 이름
+const TRAIT_LABELS = {
+  cat: { speedy: '급식러', lazy: '미식가', normal: '보통냥', anxious: '눈치냥', glutton: '흡입기', picky: '편식냥' },
+  dog: { speedy: '스피드멍', lazy: '미식견', normal: '보통멍', anxious: '눈치멍', glutton: '진공청소기', picky: '편식멍' },
+  hamster: { speedy: '빛의속도', lazy: '느긋찍', normal: '보통찍', anxious: '눈치찍', glutton: '볼주머니', picky: '편식찍' }
+};
+
+// 딴짓 이벤트 기본 설정
 const DISTRACT_EVENTS = [
-  { label:'그루밍 촵촵🐾', pose:'groom', duration: [1680, 3360] },
-  { label:'냥냥펀치! ✊',  pose:'groom', duration: [840, 1680] },
-  { label:'깜빡 조는중 💤', pose:'sleep', duration: [2160, 3840] },
-  { label:'딴 데 봄 👀',   pose:'idle',  duration: [1200, 2520] },
-  { label:'갑자기 가렵다',  pose:'groom', duration: [1200, 2160] },
+  { id:'groom', pose:'groom', duration: [1680, 3360] },
+  { id:'punch', pose:'groom', duration: [840, 1680] },
+  { id:'sleep', pose:'sleep', duration: [2160, 3840] },
+  { id:'idle',  pose:'idle',  duration: [1200, 2520] },
+  { id:'itchy', pose:'groom', duration: [1200, 2160] },
 ];
+
+// 동물별 맞춤 딴짓 텍스트
+const DISTRACT_LABELS = {
+  cat: { groom: '그루밍 촵촵🐾', punch: '냥냥펀치! ✊', sleep: '깜빡 조는중 💤', idle: '딴 데 봄 👀', itchy: '갑자기 가렵다' },
+  dog: { groom: '꼬리물기 뱅글🌀', punch: '멍멍펀치! 🐾', sleep: '깜빡 조는중 💤', idle: '딴 데 봄 👀', itchy: '뒷다리 긁적' },
+  hamster: { groom: '세수 쓱싹🐹', punch: '볼따구 빵빵 🐿️', sleep: '깜빡 조는중 💤', idle: '딴 데 봄 👀', itchy: '쳇바퀴 생각 🎡' }
+};
+
 
 let animals = [];
 let finishOrder = [];
@@ -732,14 +750,16 @@ function initGame(names) {
   const traitPool = shuffle([...TRAITS, ...TRAITS, ...TRAITS]).slice(0, names.length);
 
   names.forEach((name, i) => {
-    const trait = traitPool[i % traitPool.length];
-    
     // 이스터 에그 체크
     const isDog = name === '장수익';
     const isHamster = name === '박예지';
     const animalType = isDog ? 'dog' : (isHamster ? 'hamster' : 'cat');
     
-    // 색상 결정: 전용 팔레트가 있으면 전용, 없으면 랜덤 고양이 색상
+    // 성격 뱃지(trait) 이름도 동물별로 맞춤 설정 (확률 등 스탯은 공통유지)
+    const baseTrait = traitPool[i % traitPool.length];
+    const trait = { ...baseTrait, label: TRAIT_LABELS[animalType][baseTrait.id] };
+    
+    // 색상 결정
     let colorKey = 'golden'; // dog default
     if (isHamster) colorKey = 'cream';
     if (!isDog && !isHamster) colorKey = catColors[i % catColors.length];
@@ -802,7 +822,6 @@ function gameLoop(now) {
         cat.nextDistractAt = elapsed + rand(2000, 5000);
       } else {
         cat.bobPhase += dt * 3;
-        // 통합 getAnimalSVG 함수 호출
         cat.svgWrap.innerHTML = getAnimalSVG(cat.animalType, cat.colorKey, cat.distractEvent.pose, cat.bobPhase);
         return;
       }
@@ -813,10 +832,8 @@ function gameLoop(now) {
         cat.distracted = true;
         const ev = pick(DISTRACT_EVENTS);
         
-        // 동물별 어울리는 대사 설정
-        let label = ev.label;
-        if (cat.animalType === 'dog' && label === '냥냥펀치! ✊') label = '멍멍펀치! ✊';
-        if (cat.animalType === 'hamster' && label === '그루밍 촵촵🐾') label = '볼따구 빵빵 🐾';
+        // 동물별 어울리는 딴짓 텍스트 매핑
+        const label = DISTRACT_LABELS[cat.animalType][ev.id];
 
         cat.distractEvent = {...ev, label}; // 복사하여 대사 수정
         cat.distractTimeLeft = rand(...ev.duration);
@@ -833,7 +850,7 @@ function gameLoop(now) {
     cat.barEl.style.width = ((1 - cat.eaten) * 100).toFixed(1) + '%';
     cat.pctEl.innerText = Math.ceil((1 - cat.eaten) * 100) + '%';
     cat.bobPhase += dt * (cat.trait.speedMult > 1.05 ? 18 : cat.trait.speedMult < 0.95 ? 8 : 12);
-    // 통합 getAnimalSVG 함수 호출
+    
     cat.svgWrap.innerHTML = getAnimalSVG(cat.animalType, cat.colorKey, 'eat', cat.bobPhase);
 
     if (now - cat.lastParticleAt > rand(200, 500)) {
@@ -845,7 +862,7 @@ function gameLoop(now) {
       cat.finished = true;
       finishOrder.push(cat.i);
       const rank = finishOrder.length;
-      // 통합 getAnimalSVG 함수 호출
+      
       cat.svgWrap.innerHTML = getAnimalSVG(cat.animalType, cat.colorKey, 'idle', 0);
       
       // 동물별 완료 대사 설정
@@ -903,7 +920,6 @@ function showResult() {
     const rank = index + 1;
     const isLoser = rank > (n - loserCount);
     
-    // 꼴찌는 카드 시각 효과 업데이트
     if (isLoser) {
       cat.card.classList.add('winner'); 
       cat.stateEl.innerText = '벌칙 당첨... ☕';
@@ -915,7 +931,6 @@ function showResult() {
     if (rank === 2) rankIcon = '🥈';
     if (rank === 3) rankIcon = '🥉';
 
-    // 1. 전체 순위 박스 (왼쪽) 에 모두 추가
     let textColor = isLoser ? '#FF6B8B' : '#48CAE4';
     listAll.innerHTML += `
       <div class="result-row" style="animation-delay:${index * 0.1}s">
@@ -925,7 +940,6 @@ function showResult() {
       </div>
     `;
 
-    // 2. 벌칙 당첨 박스 (오른쪽) 에 당첨자만 추가
     if (isLoser) {
       listPenalty.innerHTML += `
         <div class="result-row" style="animation-delay:${index * 0.1}s">
